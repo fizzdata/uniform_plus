@@ -3,117 +3,85 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class ShopifyAuthController extends Controller
 {
+    protected $apiKey;
+    protected $apiSecret;
+    protected $scopes;
+    protected $redirectUri;
+    
     public function __construct()
     {
-        // Initialize Shopify Context
-        Context::initialize(
-            apiKey: config('shopify.api_key'),
-            apiSecretKey: config('shopify.api_secret'),
-            scopes: config('shopify.scopes'),
-            hostName: parse_url(config('shopify.redirect_uri'), PHP_URL_HOST),
-            isEmbedded: true
-        );
+        $this->apiKey = env('SHOPIFY_API_KEY');
+        $this->apiSecret = env('SHOPIFY_API_SECRET');
+        $this->scopes = env('SHOPIFY_SCOPES', 'read_orders,write_orders');
+        $this->redirectUri = env('SHOPIFY_REDIRECT_URI');
     }
     
-    public function begin(Request $request)
+    public function installShop(Request $request)
     {
-        $shop = $request->query('shop');
+        $shop = $request->get('shop');
         
         if (!$shop) {
-            return response('Shop parameter is required', 400);
+            return view('shopify.install');
         }
         
-        // Check if we already have an access token
-        if ($request->session()->has('access_token') && $request->session()->get('shop') === $shop) {
-            return redirect()->route('home');
+        // Validate the shop domain
+        if (!$this->isValidShopifyDomain($shop)) {
+            return redirect()->back()->with('error', 'Invalid Shopify shop domain');
         }
         
-        // Build auth URL
-        $authUrl = OAuth::beginAuth(
-            shop: $shop,
-            redirectPath: route('shopify.callback'),
-            isOnline: false
-        );
+        // Generate install URL
+        $installUrl = "https://{$shop}/admin/oauth/authorize?"
+            . "client_id={$this->apiKey}"
+            . "&scope={$this->scopes}"
+            . "&redirect_uri={$this->redirectUri}";
         
-        return redirect($authUrl);
+        return redirect($installUrl);
     }
     
-    public function callback(Request $request)
+    public function handleCallback(Request $request)
     {
-        $session = OAuth::callback(
-            request: $request->query(),
-            isOnline: false
-        );
+        $shop = $request->get('shop');
+        $code = $request->get('code');
         
-        // Store session data in Laravel session
-        $request->session()->put('access_token', $session->getAccessToken());
-        $request->session()->put('shop', $session->getShop());
+        if (!$shop || !$code) {
+            return redirect()->route('shopify.install')->with('error', 'Missing required parameters');
+        }
         
-        // Optional: Store shop info in database for persistence
-        $this->storeShopInfo($session->getShop(), $session->getAccessToken());
-        
-        // Register webhooks (optional but recommended)
-        $this->registerWebhooks($session->getShop(), $session->getAccessToken());
-        
-        return redirect()->route('home');
-    }
-    
-    private function registerWebhooks($shop, $accessToken)
-    {
-        $client = new Rest($shop, $accessToken);
-        
-        // Register for order creation webhook
-        $client->post(
-            'webhooks',
-            [
-                'webhook' => [
-                    'topic' => 'orders/create',
-                    'address' => route('webhooks.orders.create'),
-                    'format' => 'json'
-                ]
-            ]
-        );
-        
-        // Register for order update webhook
-        $client->post(
-            'webhooks',
-            [
-                'webhook' => [
-                    'topic' => 'orders/updated',
-                    'address' => route('webhooks.orders.update'),
-                    'format' => 'json'
-                ]
-            ]
-        );
-    }
-    
-    private function storeShopInfo($shop, $accessToken)
-    {
-        // Check if shop already exists in the database
-        $shopExists = DB::table('shops')
-            ->where('shop_domain', $shop)
-            ->exists();
+        try {
+            // Exchange temporary code for a permanent access token
+            $response = Http::post("https://{$shop}/admin/oauth/access_token", [
+                'client_id' => $this->apiKey,
+                'client_secret' => $this->apiSecret,
+                'code' => $code
+            ]);
             
-        if ($shopExists) {
-            // Update existing shop record
-            DB::table('shops')
-                ->where('shop_domain', $shop)
-                ->update([
-                    'access_token' => $accessToken,
-                    'updated_at' => now(),
-                ]);
-        } else {
-            // Create new shop record
-            DB::table('shops')
-                ->insert([
-                    'shop_domain' => $shop,
-                    'access_token' => $accessToken,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            if (!$response->successful()) {
+                return redirect()->route('shopify.install')->with('error', 'Failed to authenticate with Shopify');
+            }
+            
+            $data = $response->json();
+            
+            // Store the access token and shop domain in session
+            session([
+                'shopify_token' => $data['access_token'],
+                'shopify_domain' => $shop
+            ]);
+            
+            // You could also store this in your database for a more permanent solution
+            
+            return redirect()->route('orders.index')->with('success', 'Successfully connected to your Shopify store');
+            
+        } catch (\Exception $e) {
+            return redirect()->route('shopify.install')->with('error', 'An error occurred: ' . $e->getMessage());
         }
+    }
+    
+    private function isValidShopifyDomain($shop)
+    {
+        return preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/', $shop);
     }
 }
