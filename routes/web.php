@@ -12,9 +12,9 @@ use App\Http\Controllers\ShopifyAuthController;
 
 // Public routes
 Route::get('/', function () {
-  //  if (session('shopify_domain') && session('shopify_token')) {
+    if (session('shopify_domain') && session('shopify_token')) {
         return redirect()->route('orders.index');
-  //  }
+    }
     return redirect()->route('shopify.install');
 });
 
