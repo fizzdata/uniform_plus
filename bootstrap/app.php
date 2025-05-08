@@ -16,3 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
+
+    $middleware->alias([
+        'auth.shopify' => \App\Http\Middleware\ShopifyAuthMiddleware::class,
+
+    ]);
+
