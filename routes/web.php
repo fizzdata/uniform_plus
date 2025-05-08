@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\OrdersController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ShopifyAuthController;
 
 /*
@@ -25,6 +25,6 @@ Route::get('/auth/callback', [ShopifyAuthController::class, 'handleCallback'])->
 // Protected routes (require Shopify authentication)
 Route::middleware(['auth.shopify'])->group(function () {
     // Orders
-    Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
-    Route::post('/orders/{orderId}/update-stage', [OrdersController::class, 'updateStage'])->name('orders.update-stage');
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::post('/orders/{orderId}/update-stage', [OrderController::class, 'updateStage'])->name('orders.update-stage');
 });
