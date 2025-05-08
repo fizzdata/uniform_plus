@@ -25,6 +25,6 @@ Route::get('/auth/callback', [ShopifyAuthController::class, 'handleCallback'])->
 // Protected routes (require Shopify authentication)
 Route::middleware(['auth.shopify'])->group(function () {
     // Orders
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders', [OrderController::class, 'getOrders'])->name('orders.index');
     Route::post('/orders/{orderId}/update-stage', [OrderController::class, 'updateStage'])->name('orders.update-stage');
 });
