@@ -67,58 +67,68 @@ class OrderController extends Controller
         return response()->json(['success' => true]);
     }
     
-    public function getOrders(Request $request)
-    {
-        // Get Shopify orders
+   public function getOrders(Request $request)
+{
+    $shopDomain = $request->session()->get('shopify_domain');
+    $accessToken = $request->session()->get('shopify_token');
+
+
+    try {
+        // Initialize client with explicit HTTP client
         $client = new Rest(
-            $request->session()->get('shop'),
-            $request->session()->get('access_token')
+            $shopDomain,
+            $accessToken,
+            [
+                'api_version' => '2024-04',
+                'http_client' => new \GuzzleHttp\Client()
+            ]
+        );
+
+       
+                 dump($client);
+
+        $response = $client->get(
+            'orders/',
+            [
+                'query' => ['fields' => 'id,title']
+            ]
         );
         
-        $response = $client->get('orders');
-        $orders = $response->getDecodedBody();
+
+        // First verify API version compatibility
+        $shopResponse = $client->get('shop');
+        $shopData = $shopResponse->getDecodedBody();
         
-        // Get stages for all orders in one query
-        $orderIds = collect($orders['orders'])->pluck('id')->toArray();
-        
-        $stageMappings = DB::table('order_stage_mappings')
-            ->join('order_stages', 'order_stage_mappings.order_stage_id', '=', 'order_stages.id')
-            ->whereIn('order_stage_mappings.shopify_order_id', $orderIds)
-            ->select(
-                'order_stage_mappings.shopify_order_id', 
-                'order_stages.id as stage_id', 
-                'order_stages.name as stage_name',
-                'order_stages.color as stage_color',
-                'order_stage_mappings.notes',
-                'order_stage_mappings.entered_at'
-            )
-            ->get()
-            ->keyBy('shopify_order_id');
-        
-        // Merge stage data with Shopify orders
-        foreach ($orders['orders'] as &$order) {
-            $stageData = $stageMappings->get($order['id']);
-            
-            if ($stageData) {
-                $order['stage'] = (object) [
-                    'id' => $stageData->stage_id,
-                    'name' => $stageData->stage_name,
-                    'color' => $stageData->stage_color,
-                    'notes' => $stageData->notes,
-                    'entered_at' => $stageData->entered_at
-                ];
-            } else {
-                $order['stage'] = null;
-            }
+        if (version_compare($shopData['shop']['api_version'], '2024-04', '<')) {
+            throw new \Exception("Store API version {$shopData['shop']['api_version']} is too low");
         }
-        
-        // Get all stages for the stage selector
-        $stages = DB::table('order_stages')
-            ->orderBy('position')
-            ->get();
-        
-        return view('orders.index', compact('orders', 'stages'));
+
+        // Get orders with pagination
+        $response = $client->get('orders', [
+            'query' => [
+                'status' => 'any',
+                'limit' => 250
+            ]
+        ]);
+
+        // Debug full response
+        logger()->debug('Shopify Orders Response', [
+            'status' => $response->getStatusCode(),
+            'headers' => $response->getHeaders(),
+            'body' => $ordersData = $response->getDecodedBody()
+        ]);
+
+        $shopifyOrders = $ordersData['orders'] ?? [];
+
+        // ... rest of your existing code ...
+
+    } catch (\Exception $e) {
+        logger()->error("Order Fetch Error: {$e->getMessage()}", [
+            'exception' => $e
+        ]);
+        return back()->withErrors($e->getMessage());
     }
+}
     
     public function getOrdersWithStage(Request $request, $stageId)
     {

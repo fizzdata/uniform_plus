@@ -11,16 +11,25 @@ use App\Http\Controllers\ShopifyAuthController;
 */
 
 // Public routes
+
 Route::get('/', function () {
-    if (session('shopify_domain') && session('shopify_token')) {
-        return redirect()->route('orders.index');
-    }
-    return redirect()->route('shopify.install');
-});
+    return view('welcome');
+})->middleware(['verify.shopify'])->name('home');
+
+
+
+
+// Route::get('/', function () {
+//     if (session('shopify_domain') && session('shopify_token')) {
+//         return redirect()->route('orders.index');
+//     }
+//     return redirect()->route('shopify.install');
+// });
 
 // Shopify installation routes
+
 Route::get('/install', [ShopifyAuthController::class, 'installShop'])->name('shopify.install');
-Route::get('/auth/callback', [ShopifyAuthController::class, 'handleCallback'])->name('shopify.callback');
+//Route::get('/authenticate', [ShopifyAuthController::class, 'handleCallback'])->name('shopify.callback');
 
 // Protected routes (require Shopify authentication)
 Route::middleware(['auth.shopify'])->group(function () {
