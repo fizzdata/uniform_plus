@@ -1,10 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Dashboard from './Pages/Dashboard.vue';
-import Orders from './Pages/Orders.vue';
+import Dashboard from './views/Dashboard.vue';
+import Orders from './views/Orders.vue';
+import install from './views/Install.vue';
+import Inventory from './views/Inventory.vue'
+
 
 const routes = [
   { path: '/', component: Dashboard },
   { path: '/orders', component: Orders },
+  { path: '/install', component: install },
+  { path: '/inventory', component: Inventory },
 ];
 
 const router = createRouter({
@@ -12,4 +17,14 @@ const router = createRouter({
   routes,
 });
 
+
+// Redirect to install if shop isn't set
+router.beforeEach((to, from, next) => {
+  const shopName = localStorage.getItem('shop_name');
+  if (!shopName && to.path !== '/install') {
+    next('/install');
+  } else {
+    next();
+  }
+});
 export default router;
