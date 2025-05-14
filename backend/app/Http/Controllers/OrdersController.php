@@ -37,6 +37,6 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
         } 
 
-    return $response()->json($response);
+    return response()->json($response);
     }
 }
