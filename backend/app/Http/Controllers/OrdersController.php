@@ -75,7 +75,7 @@ class OrdersController extends Controller
     $formattedOrders = [];
 
     foreach ($orders as $order):
-        $shopifyOrderId = (string) $order['shopify_order_id'];
+        $shopifyOrderId = (string) $order['id'];
          // Ensure ID format consistency
         $latestStatus = isset($orderStatuses[$shopifyOrderId]) 
             ? $orderStatuses[$shopifyOrderId]->first()->status_name 
