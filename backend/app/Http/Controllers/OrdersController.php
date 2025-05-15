@@ -37,8 +37,12 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
         } 
 
-    $orders = $response->json()['orders'] ?? [];
+    $orders = $response->json()['orders'];
 
+    if (empty($orders)) :
+        return response()->json(['message' => 'No orders found'], 200);
+    endif;
+    
      // Step 2: Fetch latest status for each order using Query Builder
     $orderStatuses = DB::table('order_status')
         ->join('statuses', 'order_status.status_id', '=', 'statuses.id')
