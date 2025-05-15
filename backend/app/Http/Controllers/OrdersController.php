@@ -42,7 +42,7 @@ class OrdersController extends Controller
     if (empty($orders)) :
         return response()->json(['message' => 'No orders found'], 200);
     endif;
-    
+
      // Step 2: Fetch latest status for each order using Query Builder
     $orderStatuses = DB::table('order_status')
         ->join('statuses', 'order_status.status_id', '=', 'statuses.id')
@@ -54,20 +54,24 @@ class OrdersController extends Controller
     // Step 3: Match orders with status & format response
     $formattedOrders = [];
 
-    foreach ($orders as $order) {
-        $shopifyOrderId = (string) $order['id']; // Ensure ID format consistency
+    foreach ($orders as $order):
+        $shopifyOrderId = (string) $order['id'];
+         // Ensure ID format consistency
         $latestStatus = isset($orderStatuses[$shopifyOrderId]) 
             ? $orderStatuses[$shopifyOrderId]->first()->status_name 
             : 'Not Tracked'; // Default if no status found
 
+
+        $customerName = isset($order['customer']) ? "{$order['customer']['first_name']} {$order['customer']['last_name']}" : 'Guest Checkout';
+
         $formattedOrders[] = [
             'id' => $shopifyOrderId,
-            'customer_name' => "{$order['customer']['first_name']} {$order['customer']['last_name']}",
+            'customer_name' => $customerName,
             'status' => $latestStatus,
             'amount' => $order['total_price'],
             'link' => url("/orders/{$shopifyOrderId}/edit"),
         ];
-    }
+    endforeach;
 
     return response()->json($formattedOrders);
 
