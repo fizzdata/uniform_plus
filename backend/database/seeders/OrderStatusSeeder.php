@@ -9,16 +9,15 @@ class OrderStatusSeeder extends Seeder
 {
     public function run()
     {
-        $statuses = [
-            ['name' => 'Stared', 'description' => 'Order has been stared', 'color' => 'blue', 'sequence' => 1],
-            ['name' => 'paid', 'description' => 'Order has been paid', 'color' => 'green', 'sequence' => 2],
-            ['name' => 'in production', 'description' => 'Order is in production', 'color' => 'orange', 'sequence' => 3],
-            ['name' => ' received from production', 'description' => 'Order has been received from production', 'color' => 'pink', 'sequence' => 4],
-            ['name' => 'ready for pickup', 'description' => 'Order is ready for pickup', 'color' => 'purple', 'sequence' => 5],
-            ['name' => 'picked up', 'description' => 'Order has been picked up', 'color' => '#FF5733', 'sequence' => 6],
-            ['name' => 'delivered to customer', 'description' => 'Order has been delivered to customer', 'color' => '#C70039', 'sequence' => 7],
-        ];
-
+$statuses = [
+    ['name' => 'Started', 'description' => 'Order has been started', 'color' => 'bg-blue-500', 'sequence' => 1], // Cool tone for initial stage
+    ['name' => 'Paid', 'description' => 'Order has been paid', 'color' => 'bg-green-500', 'sequence' => 2], // Green for success/payment
+    ['name' => 'In Production', 'description' => 'Order is in production', 'color' => 'bg-yellow-500', 'sequence' => 3], // Yellow for active work
+    ['name' => 'Received from Production', 'description' => 'Order has been received from production', 'color' => 'bg-purple-500', 'sequence' => 4], // Purple for transition phase
+    ['name' => 'Ready for Pickup', 'description' => 'Order is ready for pickup', 'color' => 'bg-indigo-500', 'sequence' => 5], // Indigo for preparedness
+    ['name' => 'Picked Up', 'description' => 'Order has been picked up', 'color' => 'bg-gray-500', 'sequence' => 6], // Neutral gray for completion
+    ['name' => 'Delivered to Customer', 'description' => 'Order has been delivered to customer', 'color' => 'bg-teal-500', 'sequence' => 7], // Teal for final delivery
+];
         DB::table('statuses')->insert($statuses);
     }
 }

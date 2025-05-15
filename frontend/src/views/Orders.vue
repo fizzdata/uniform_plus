@@ -66,8 +66,8 @@
                   >
                     &larr;
                   </button>
-                  <span :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${getStatusDisplay(order.current_status_id).color}`">
-                  {{ getStatusDisplay(order.status_id).name }}
+                  <span :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusDisplay(order.status_id)?.color}`">
+                      {{ getStatusDisplay(order.status_id)?.name }}
                   </span>
                   <button 
                     @click="updateOrderStatus(order, 'next')"
@@ -155,24 +155,30 @@ const updateOrderStatus = async (order, direction) => {
     const nextStatus = statuses.value[nextIndex] || statuses.value[currentIndex]; // Prevent invalid updates
 
     try {
-        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}?status_id=${nextStatus.id}`, {
+        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}`, {
             method: 'GET',
-            headers: { 
-              'Content-Type': 'application/json'
-               },
-           // body: JSON.stringify({ status_id: nextStatus.id }),
+            headers: { 'Content-Type': 'application/json' }
+            // body: JSON.stringify({ status_id: nextStatus.id }), // If needed for update
         });
 
         if (response.ok) {
-            order.current_status_id = nextStatus.id; // Update Vue state instantly
+            // **Update local state instantly**
+            order.status_id = nextStatus.id; 
+            showMessage(`Status updated to "${nextStatus.name}"`, 'success'); 
         } else {
             console.error('Error updating status:', await response.json());
+            showMessage('Failed to update order status. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Request failed:', error);
+        showMessage('Network error. Please check your connection.', 'error');
     }
 };
 
+// **Notification function**
+const showMessage = (msg, type) => {
+    alert(msg); // Replace with your preferred notification system (Toast, Snackbar, etc.)
+};
 const getNextStatus = (currentStatus) => {
     const currentIndex = statusFlow.indexOf(currentStatus);
     return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : currentStatus;
@@ -187,9 +193,11 @@ const fetchStatuses = async () => {
     }
 };
 
-const getStatusDisplay = (statusId) => {
-    const status = statuses.value.find(s => s.id === statusId);
-    return status ? { name: status.name, color: status.color } : { name: 'Unknown', color: 'gray' };
+const getStatusDisplay = (status_id) => {
+    const status = statuses.value.find(s => s.id === Number(status_id));
+console.log('Available statuses:', statuses.value);
+console.log('Looking for status_id:', status_id);
+    return status ? { name: status.name, color: status.color } : { name: 'Unknown', color: 'bg-gray-500' };
 };
 
 onMounted(() => {

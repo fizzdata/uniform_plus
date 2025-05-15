@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Orders;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 class OrdersController extends Controller
 {
     public function index(Request $request){
+
 
     $request->validate(['shop' => 'required|string']);
     $shop = $request->input('shop');
@@ -38,17 +40,19 @@ class OrdersController extends Controller
 
     $orders = $response->json()['orders'];
 
-    dd($orders);
+
+    //$orders = Orders::demo();
+
+
     if (empty($orders)) :
         return response()->json(['message' => 'No orders found'], 200);
     endif;
 
      // Step 2: Fetch latest status for each order using Query Builder
-    $orderStatuses = DB::table('orders')
-        ->join('statuses', 'orders.status_id', '=', 'statuses.id')
-        ->select('orders.shopify_order_id', 'statuses.id as status_id')
-        ->get()
-        ->groupBy('orders.shopify_order_id');
+$orderStatuses = DB::table('orders')
+    ->join('statuses', 'orders.status_id', '=', 'statuses.id')
+    ->select('orders.shopify_order_id', 'orders.status_id')
+    ->pluck('orders.status_id', 'orders.shopify_order_id'); // Creates associative array
 
     // Step 3: Match orders with status & format response
     $formattedOrders = [];
@@ -56,10 +60,7 @@ class OrdersController extends Controller
     foreach ($orders as $order):
         $shopifyOrderId = (string) $order['id'];
          // Ensure ID format consistency
-        $latestStatus = (int) isset($orderStatuses[$shopifyOrderId]) 
-            ? $orderStatuses[$shopifyOrderId]->first()->status_id 
-            : 1; // Default if no status found
-
+           $latestStatus = (int) data_get($orderStatuses, $shopifyOrderId, 1); // Default status if missing
 
         $customerName = isset($order['customer']) ? "{$order['customer']['first_name']} {$order['customer']['last_name']}" : 'Guest Checkout';
 
@@ -67,9 +68,9 @@ class OrdersController extends Controller
             'id' => $shopifyOrderId,
             'customer_name' => $customerName,
             'created_at' => $order['created_at'],
-            'status' => $latestStatus,
-            'amount' => $order['total_price'],
-            'link' => url("/orders/{$shopifyOrderId}/edit"),
+            'status_id' => $latestStatus,
+            'amount' => $order['current_total_price'],
+            'link' => $order['order_status_url'],
         ];
     endforeach;
 

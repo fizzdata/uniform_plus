@@ -25,3 +25,5 @@ Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.
 
 Route::get('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
 Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
+
+
