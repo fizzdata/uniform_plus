@@ -37,27 +37,35 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
         } 
 
-     // Fetch local order statuses
-$orderStatuses = DB::table('order_status')
-    ->join('statuses', 'order_status.status_id', '=', 'statuses.id')
-    ->select('order_status.order_id', 'statuses.name as status_name', 'order_status.changed_at')
-    ->orderBy('order_status.changed_at', 'desc')
-    ->get()
-    ->groupBy('order_id');
-// Build formatted response
-$formattedOrders = collect($response['orders'])->map(function ($order) use ($orderStatuses) {
-    $shopifyOrderId = $order['id'];
-    $latestStatus = $orderStatuses[$shopifyOrderId]->last() ?? null;
+    $orders = $response->json()['orders'] ?? [];
 
-    return [
-        'id' => $shopifyOrderId,
-        'customer_name' => "{$order['customer']['first_name']} {$order['customer']['last_name']}",
-        'status' => $latestStatus ? $latestStatus->status->name : 'Not Tracked',
-        'amount' => $order['total_price'],
-        'link' => url("/orders/{$shopifyOrderId}/edit"),
-    ];
-})->toArray();   
+     // Step 2: Fetch latest status for each order using Query Builder
+    $orderStatuses = DB::table('order_status')
+        ->join('statuses', 'order_status.status_id', '=', 'statuses.id')
+        ->select('order_status.order_id', 'statuses.name as status_name')
+        ->orderBy('order_status.changed_at', 'desc')
+        ->get()
+        ->groupBy('order_id');
+
+    // Step 3: Match orders with status & format response
+    $formattedOrders = [];
+
+    foreach ($orders as $order) {
+        $shopifyOrderId = (string) $order['id']; // Ensure ID format consistency
+        $latestStatus = isset($orderStatuses[$shopifyOrderId]) 
+            ? $orderStatuses[$shopifyOrderId]->first()->status_name 
+            : 'Not Tracked'; // Default if no status found
+
+        $formattedOrders[] = [
+            'id' => $shopifyOrderId,
+            'customer_name' => "{$order['customer']['first_name']} {$order['customer']['last_name']}",
+            'status' => $latestStatus,
+            'amount' => $order['total_price'],
+            'link' => url("/orders/{$shopifyOrderId}/edit"),
+        ];
+    }
 
     return response()->json($formattedOrders);
+
     }
 }
