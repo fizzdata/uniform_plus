@@ -48,10 +48,6 @@ class StatusController extends Controller
             ['shopify_order_id' => $request->order_id],
             ['status_id' => $nextStatus->id]
         );
-        
-        DB::table('orders')
-            ->where('id', $request->order_id)
-            ->update(['status_id' => $nextStatus->id]);
 
         // Insert new status history record
         DB::table('order_status_history')->insert([
