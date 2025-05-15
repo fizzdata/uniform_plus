@@ -37,6 +37,27 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
         } 
 
-    return response()->json($response->json());
+     // Fetch local order statuses
+$orderStatuses = DB::table('order_status')
+    ->join('statuses', 'order_status.status_id', '=', 'statuses.id')
+    ->select('order_status.order_id', 'statuses.name as status_name', 'order_status.changed_at')
+    ->orderBy('order_status.changed_at', 'desc')
+    ->get()
+    ->groupBy('order_id');
+// Build formatted response
+$formattedOrders = collect($response['orders'])->map(function ($order) use ($orderStatuses) {
+    $shopifyOrderId = $order['id'];
+    $latestStatus = $orderStatuses[$shopifyOrderId]->last() ?? null;
+
+    return [
+        'id' => $shopifyOrderId,
+        'customer_name' => "{$order['customer']['first_name']} {$order['customer']['last_name']}",
+        'status' => $latestStatus ? $latestStatus->status->name : 'Not Tracked',
+        'amount' => $order['total_price'],
+        'link' => url("/orders/{$shopifyOrderId}/edit"),
+    ];
+})->toArray();   
+
+    return response()->json($formattedOrders);
     }
 }

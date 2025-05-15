@@ -67,7 +67,7 @@
                     &larr;
                   </button>
                   <span :class="statusClasses(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ order.financial_status }}
+                    {{ status }}
                   </span>
                   <button 
                     @click="updateOrderStatus(order, 'next')"
@@ -121,6 +121,7 @@ import { ref, computed } from 'vue';
 import { useShopifyOrders } from '../composables/useShopifyOrders';
 
 const shopName = ref('');
+const status = ref(1);
 const { 
   orders, 
   fetchOrders, 
@@ -185,65 +186,4 @@ const updateOrderStatus = async (order, direction) => {
   }
 };
 </script>
-And here's the corresponding useShopifyOrders.js composable:
 
-javascript
-// src/composables/useShopifyOrders.js
-import { ref } from 'vue';
-import axios from 'axios';
-
-export function useShopifyOrders() {
-  const orders = ref([]);
-  const loading = ref(false);
-  const currentPage = ref(1);
-  const totalOrders = ref(0);
-  const hasNextPage = ref(false);
-  const hasPreviousPage = ref(false);
-
-  const fetchOrders = async (page = 1) => {
-    const shopName = localStorage.getItem('shop_name');    
-    loading.value = true;
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/shopify/orders`, {
-        params: {
-          shop: shopName.value,
-          page,
-          limit: 10
-        }
-      });
-      
-      orders.value = response.data.orders;
-      currentPage.value = page;
-      totalOrders.value = response.data.total;
-      hasNextPage.value = response.data.has_next;
-      hasPreviousPage.value = page > 1;
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const updateOrderStatus = async (orderId, newStatus) => {
-    try {
-      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/shopify/orders/${orderId}`, {
-        status: newStatus
-      });
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      throw error;
-    }
-  };
-
-  return {
-    shopName,
-    orders,
-    fetchOrders,
-    loading,
-    updateOrderStatus,
-    currentPage,
-    totalOrders,
-    hasNextPage,
-    hasPreviousPage
-  };
-}
