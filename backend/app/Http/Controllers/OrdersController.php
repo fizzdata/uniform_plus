@@ -13,28 +13,6 @@ class OrdersController extends Controller
 {
     public function index(Request $request){
 
-
-    // return response()->json(['orders' =>  [
-    //     [
-    //         'id' => 1,
-    //         'customer_name' => 'John Doe',
-    //         'created_at' => '2024-10-01T12:00:00Z',
-    //         'status_id' => 1,
-    //         'amount' => 100.00,
-    //         'link' => url('/orders/1/edit'),
-    //     ],
-    //     [
-    //         'id' => 2,
-    //         'customer_name' => 'Jane Smith',
-    //         'created_at' => '2024-10-02T14:30:00Z',
-    //         'status_id' => 2,
-    //         'amount' => 50.00,
-    //         'link' => url('/orders/2/edit'),
-    //     ],
-    // ]
-    // ]);        
-    
-    
     $request->validate(['shop' => 'required|string']);
     $shop = $request->input('shop');
 
@@ -60,6 +38,7 @@ class OrdersController extends Controller
 
     $orders = $response->json()['orders'];
 
+    dd($orders);
     if (empty($orders)) :
         return response()->json(['message' => 'No orders found'], 200);
     endif;
@@ -67,7 +46,7 @@ class OrdersController extends Controller
      // Step 2: Fetch latest status for each order using Query Builder
     $orderStatuses = DB::table('orders')
         ->join('statuses', 'orders.status_id', '=', 'statuses.id')
-        ->select('orders.id', 'orders.shopify_order_id', 'statuses.name as status_name')
+        ->select('orders.shopify_order_id', 'statuses.id as status_id')
         ->get()
         ->groupBy('orders.shopify_order_id');
 
