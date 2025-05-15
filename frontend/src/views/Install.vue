@@ -25,6 +25,12 @@ export default {
           localStorage.setItem('shop_name', shopName.value); // Save shop name
           window.location.href = '/'; // Redirect to dashboard
         }
+        else {
+        
+        // Redirect to Shopify authorization URL
+        window.location.href = `${apiUrl}/auth/shopify?shop=${shopName.value}`;
+
+        }
       } catch (error) {
         console.error('Failed to install app:', error);
       }

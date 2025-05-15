@@ -13,7 +13,7 @@ Route::get('/shopify/install', function (Request $request) {
     $storedShop = Shop::where('shop_domain', $shop)->first();
 
     if (!$storedShop) {
-        return response()->json(['error' => 'Shop not found, please install the app first.']);
+        return response()->json(['success' => false]);
     }
 
     return response()->json(['success' => true]);
