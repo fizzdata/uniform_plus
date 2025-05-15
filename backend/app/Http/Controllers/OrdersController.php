@@ -77,9 +77,9 @@ class OrdersController extends Controller
     foreach ($orders as $order):
         $shopifyOrderId = (string) $order['id'];
          // Ensure ID format consistency
-        $latestStatus = isset($orderStatuses[$shopifyOrderId]) 
-            ? $orderStatuses[$shopifyOrderId]->first()->status_name 
-            : 'Not Tracked'; // Default if no status found
+        $latestStatus = (int) isset($orderStatuses[$shopifyOrderId]) 
+            ? $orderStatuses[$shopifyOrderId]->first()->status_id 
+            : 1; // Default if no status found
 
 
         $customerName = isset($order['customer']) ? "{$order['customer']['first_name']} {$order['customer']['last_name']}" : 'Guest Checkout';
