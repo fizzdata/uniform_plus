@@ -67,6 +67,7 @@ class OrdersController extends Controller
         $formattedOrders[] = [
             'id' => $shopifyOrderId,
             'customer_name' => $customerName,
+            'created_at' => $order['created_at'],
             'status' => $latestStatus,
             'amount' => $order['total_price'],
             'link' => url("/orders/{$shopifyOrderId}/edit"),

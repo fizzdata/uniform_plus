@@ -49,13 +49,13 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                #{{ order.id }}
+                #{{ id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ order.customer?.first_name || 'N/A' }} {{ order.customer?.last_name || 'N/A' }}
+                {{ customer_name }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ formatDate(order.created_at) }}
+                {{ formatDate(created_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
@@ -79,10 +79,10 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${{ order.total_price }}
+                ${{ amount }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button class="text-indigo-600 hover:text-indigo-900 mr-3">View</button>
+                <a :href="link" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
                 <button class="text-gray-600 hover:text-gray-900">Edit</button>
               </td>
             </tr>
