@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_status', function (Blueprint $table) {
+        Schema::create('order_status_history', function (Blueprint $table) {
             $table->id();
-        $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
-        $table->foreignId('status_id')->constrained('statuses');
-        $table->foreignId('user_id')->constrained('users')->nullable(); // Tracks the user who updated
-        $table->timestamp('changed_at')->default(now()); // Time of change
-        $table->timestamps();
+            $table->string('order_id');
+            $table->foreignId('status_id')->constrained('statuses');
+            $table->string('by_user')->nullable(); // Tracks the user who updated
+            $table->timestamp('changed_at')->default(now()); // Time of change
+            $table->timestamps();
         });
     }
 

@@ -49,40 +49,40 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                #{{ id }}
+                #{{ order.id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ customer_name }}
+                {{ order.customer_name }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ formatDate(created_at) }}
+                {{ formatDate(order.created_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
                   <button 
                     @click="updateOrderStatus(order, 'previous')"
                     class="text-gray-500 hover:text-gray-700"
-                    :disabled="isFirstStatus(order.status)"
+                    :disabled="isFirstStatus(order.status_id)"
                   >
                     &larr;
                   </button>
-                  <span :class="statusClasses(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ status }}
+                  <span :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${getStatusDisplay(order.current_status_id).color}`">
+                  {{ getStatusDisplay(order.status_id).name }}
                   </span>
                   <button 
                     @click="updateOrderStatus(order, 'next')"
                     class="text-gray-500 hover:text-gray-700"
-                    :disabled="isLastStatus(order.status)"
+                    :disabled="isLastStatus(order.status_id)"
                   >
                     &rarr;
                   </button>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${{ amount }}
+                ${{ order.amount }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <a :href="link" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
+                <a :href="order.link" class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
                 <button class="text-gray-600 hover:text-gray-900">Edit</button>
               </td>
             </tr>
@@ -119,9 +119,12 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useShopifyOrders } from '../composables/useShopifyOrders';
+import { onMounted } from 'vue';
 
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const shopName = ref('');
-const status = ref(1);
+const status = ref('');
+const statuses = ref([]);
 const { 
   orders, 
   fetchOrders, 
@@ -133,26 +136,7 @@ const {
   hasPreviousPage
 } = useShopifyOrders();
 
-// Define the order status flow
-const statusFlow = ['Pending', 'Processing', 'Shipped', 'Completed', 'Cancelled'];
-
-const statusClasses = (status) => {
-  switch(status) {
-    case 'Completed':
-      return 'bg-green-100 text-green-800';
-    case 'Processing':
-      return 'bg-blue-100 text-blue-800';
-    case 'Shipped':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'Pending':
-      return 'bg-gray-100 text-gray-800';
-    case 'Cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
+const statusFlow = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const isFirstStatus = (status) => {
   return statusFlow.indexOf(status) <= 0;
 };
@@ -166,24 +150,52 @@ const formatDate = (dateString) => {
 };
 
 const updateOrderStatus = async (order, direction) => {
-  const currentIndex = statusFlow.indexOf(order.status);
-  let newStatus;
-  
-  if (direction === 'next' && currentIndex < statusFlow.length - 1) {
-    newStatus = statusFlow[currentIndex + 1];
-  } else if (direction === 'previous' && currentIndex > 0) {
-    newStatus = statusFlow[currentIndex - 1];
-  } else {
-    return;
-  }
+    const currentIndex = statuses.value.findIndex(s => s.id === order.status_id);
+    const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    const nextStatus = statuses.value[nextIndex] || statuses.value[currentIndex]; // Prevent invalid updates
 
-  try {
-    await updateStatus(order.id, newStatus);
-    // Refresh orders after update
-    await fetchOrders(currentPage.value);
-  } catch (error) {
-    console.error('Failed to update order status:', error);
-  }
+    try {
+        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}?status_id=${nextStatus.id}`, {
+            method: 'GET',
+            headers: { 
+              'Content-Type': 'application/json'
+               },
+           // body: JSON.stringify({ status_id: nextStatus.id }),
+        });
+
+        if (response.ok) {
+            order.current_status_id = nextStatus.id; // Update Vue state instantly
+        } else {
+            console.error('Error updating status:', await response.json());
+        }
+    } catch (error) {
+        console.error('Request failed:', error);
+    }
 };
+
+const getNextStatus = (currentStatus) => {
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : currentStatus;
+};
+
+const fetchStatuses = async () => {
+    try {
+        const response = await fetch(`${apiUrl}/api/statuses`);
+        statuses.value = await response.json();
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+    }
+};
+
+const getStatusDisplay = (statusId) => {
+    const status = statuses.value.find(s => s.id === statusId);
+    return status ? { name: status.name, color: status.color } : { name: 'Unknown', color: 'gray' };
+};
+
+onMounted(() => {
+    fetchStatuses();
+});
+
+
 </script>
 

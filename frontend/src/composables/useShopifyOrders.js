@@ -12,6 +12,8 @@ export function useShopifyOrders() {
             const response = await fetch(`${apiUrl}/api/shopify/orders?shop=${shop}`);
             const data = await response.json();
             orders.value = data.orders || [];
+              
+
         } catch (error) {
             console.error('Failed to fetch orders:', error);
         } finally {
