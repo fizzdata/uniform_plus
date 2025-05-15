@@ -67,7 +67,7 @@ class OrdersController extends Controller
      // Step 2: Fetch latest status for each order using Query Builder
     $orderStatuses = DB::table('orders')
         ->join('statuses', 'orders.status_id', '=', 'statuses.id')
-        ->select('orders.order_id', 'orders.shopify_order_id', 'statuses.name as status_name')
+        ->select('orders.id', 'orders.shopify_order_id', 'statuses.name as status_name')
         ->orderBy('order_status.changed_at', 'desc')
         ->get()
         ->groupBy('orders.shopify_order_id');
