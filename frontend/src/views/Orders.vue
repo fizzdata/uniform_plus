@@ -52,7 +52,7 @@
                 #{{ order.id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ order.customer?.name || 'N/A' }}
+                {{ order.customer?.first_name || 'N/A' }} {{ order.customer?.last_name || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ formatDate(order.created_at) }}
@@ -67,7 +67,7 @@
                     &larr;
                   </button>
                   <span :class="statusClasses(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ order.status }}
+                    {{ order.financial_status }}
                   </span>
                   <button 
                     @click="updateOrderStatus(order, 'next')"

@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        Schema::table('statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('shopify_order_id')->unique();
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
+            $table->string('color'); // Default color for the status
+            $table->integer('sequence')->index(); // Ensures sequential movement
             $table->timestamps();
         });
     }
@@ -23,6 +26,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::table('statuses', function (Blueprint $table) {
+            //
+        });
     }
 };
