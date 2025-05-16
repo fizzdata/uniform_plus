@@ -57,6 +57,6 @@ class ShopifyAuthController extends Controller
             ['access_token' => $accessToken]
         );
 
-        return response()->json(['message' => 'App installed successfully', 'access_token' => $accessToken]);
+        return response()->json(['message' => 'App installed successfully', 'shop' => $shop], 200);
     }
 }
