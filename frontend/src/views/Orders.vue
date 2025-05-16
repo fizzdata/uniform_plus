@@ -66,16 +66,18 @@
                   >
                     &larr;
                   </button>
-                  <span :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusDisplay(order.status_id)?.color}`">
+                  <span 
+                  :title="getStatusDisplay(order.status_id).description"
+                  :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusDisplay(order.status_id)?.color} text-white`">
                       {{ getStatusDisplay(order.status_id)?.name }}
                   </span>
                   <button 
-                    @click="updateOrderStatus(order, 'next')"
-                    class="text-gray-500 hover:text-gray-700"
-                    :disabled="isLastStatus(order.status_id)"
-                  >
-                    &rarr;
-                  </button>
+                    v-if="getNextStatus(order.status_id) !== 'Final status reached'" 
+                    @click="updateOrderStatus(order, 'next')" 
+                    style="font-size: 8px; padding: 2px; border-radius: 0.375rem; line-height:8px; border: 1px solid grey;" 
+                >
+                    Move to →<br>{{ getNextStatus(order.status_id) }}?
+                </button>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -179,9 +181,11 @@ const updateOrderStatus = async (order, direction) => {
 const showMessage = (msg, type) => {
     alert(msg); // Replace with your preferred notification system (Toast, Snackbar, etc.)
 };
-const getNextStatus = (currentStatus) => {
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : currentStatus;
+const getNextStatus = (currentStatusId) => {
+    const currentIndex = statuses.value.findIndex(s => s.id === currentStatusId);
+    const nextStatus = statuses.value[currentIndex + 1] || null; // Prevent errors if there's no next status
+
+    return nextStatus ? nextStatus.name : "Final status reached"; // Default message if at the last stage
 };
 
 const fetchStatuses = async () => {
@@ -195,8 +199,6 @@ const fetchStatuses = async () => {
 
 const getStatusDisplay = (status_id) => {
     const status = statuses.value.find(s => s.id === Number(status_id));
-console.log('Available statuses:', statuses.value);
-console.log('Looking for status_id:', status_id);
     return status ? { name: status.name, color: status.color } : { name: 'Unknown', color: 'bg-gray-500' };
 };
 
