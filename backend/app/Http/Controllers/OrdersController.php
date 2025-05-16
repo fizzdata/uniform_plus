@@ -38,10 +38,10 @@ class OrdersController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
         } 
 
-    // $orders = $response->json()['orders'];
+     $orders = $response->json()['orders'];
 
 
-    $orders = Orders::demo();
+    //$orders = Orders::demo();
 
 
     if (empty($orders)) :
