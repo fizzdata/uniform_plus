@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h1>Install Shopify App</h1>
-    <input v-model="shopName" placeholder="Enter Shopify Store URL" />
+    <h1>Install Shopify App - Enter Shopify Store URL</h1>
+    <input v-model="shopName" placeholder="store.myshopify.com" />
     <button @click="installApp">Install</button>
   </div>
 </template>

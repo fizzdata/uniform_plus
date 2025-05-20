@@ -86,11 +86,11 @@
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button 
                 @click="openOrderWindow(order.link)" 
-                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                class="text-gray-600 hover:text-gray-900"
             >
                 View
             </button>
-             <button class="text-gray-600 hover:text-gray-900">Edit</button>
+            
               </td>
             </tr>
           </tbody>
@@ -212,7 +212,7 @@ onMounted(() => {
 });
 
 const openOrderWindow = (url) => {
-    window.open(url, "_blank", "width=800,height=600,resizable=yes,scrollbars=yes");
+    window.open(url, "_blank", "width=1050,height=600,resizable=yes,scrollbars=yes");
 };
 
 
