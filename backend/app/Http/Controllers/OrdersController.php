@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 
 class OrdersController extends Controller
 {
-    public function index(Request $request){
+     public function index(Request $request){
 
 
     $request->validate(['shop' => 'required|string']);

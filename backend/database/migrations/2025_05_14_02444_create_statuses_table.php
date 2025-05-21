@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('description')->nullable();
             $table->string('color'); // Default color for the status
-            $table->integer('sequence')->index(); // Ensures sequential movement
             $table->timestamps();
         });
     }

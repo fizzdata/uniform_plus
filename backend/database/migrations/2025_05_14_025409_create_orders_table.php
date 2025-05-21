@@ -18,7 +18,11 @@ return new class extends Migration
             $table->string('customer_name')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('currency')->default('USD');
-            $table->date('order_date')->nullable();           
+            $table->date('order_date')->nullable();  
+            $table->enum('payment_method', ['in_store', 'phone', 'website']);
+            $table->enum('delivery_type', ['delivery', 'pickup'])->nullable();
+            $table->boolean('is_custom_order')->default(false);
+            $table->foreignId('current_status_id')->constrained('statuses', 'status_id');         
             $table->timestamps();
         });
     }
