@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 
 class OrdersController extends Controller
 {
-    public function index(Request $request){
+     public function index(Request $request){
 
 
     $request->validate(['shop' => 'required|string']);
@@ -58,7 +58,7 @@ $orderStatuses = DB::table('orders')
     $formattedOrders = [];
 
     foreach ($orders as $order):
-        $shopifyOrderId = (string) $order['id'];
+        $shopifyOrderId = (string) $order['name'];
          // Ensure ID format consistency
            $latestStatus = (int) data_get($orderStatuses, $shopifyOrderId, 1); // Default status if missing
 

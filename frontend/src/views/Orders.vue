@@ -49,7 +49,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                #{{ order.id }}
+                {{ order.id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ order.customer_name }}
