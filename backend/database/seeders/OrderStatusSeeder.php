@@ -51,7 +51,7 @@ class OrderStatusSeeder extends Seeder
             'color' => 'bg-indigo-500'
         ],
         [
-            'name' => 'Order Picked (Phone)',
+            'name' => 'Order Picked',
             'description' => 'Items gathered for phone orders',
             'color' => 'bg-pink-500'
         ],
