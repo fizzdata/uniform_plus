@@ -12,7 +12,7 @@ class OrderStatusSeeder extends Seeder
     $statuses = [
         // Core Statuses
         [
-            'name' => 'Order Created',
+            'name' => 'Started',
             'description' => 'Order has been placed by customer',
             'color' => 'bg-gray-500'
         ],
@@ -29,13 +29,18 @@ class OrderStatusSeeder extends Seeder
             'color' => 'bg-blue-500'
         ],
         [
-            'name' => 'Logo',
+            'name' => 'Logo Production',
             'description' => 'Logo processing stage',
             'color' => 'bg-purple-500'
         ],
         [
-            'name' => 'Dropped Off',
+            'name' => 'Dropped Off logo',
             'description' => 'Items left for processing',
+            'color' => 'bg-yellow-500'
+        ],
+        [
+            'name' => 'Picked Up logo',
+            'description' => 'Items returned for processing',
             'color' => 'bg-yellow-500'
         ],
 
@@ -102,7 +107,7 @@ class OrderStatusSeeder extends Seeder
             'color' => 'bg-emerald-500'
         ],
         [
-            'name' => 'Contacted Customer Ready for Collection',
+            'name' => 'Contacted Customer',
             'description' => 'Notification sent to customer',
             'color' => 'bg-sky-500'
         ],
@@ -111,14 +116,14 @@ class OrderStatusSeeder extends Seeder
             'description' => 'Custom items retrieved',
             'color' => 'bg-violet-500'
         ],
-        [
-            'name' => 'Custom Order Completed',
-            'description' => 'Finalized custom order',
-            'color' => 'bg-green-700'
-        ]
+       
     ];
 
-    DB::table('statuses')->insert($statuses);
-}
 
+    foreach($statuses as $s){
+
+   
+    DB::table('statuses')->insert($s);
+}
+}
 }

@@ -12,10 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('status_transitions', function (Blueprint $table) {
-            $table->foreignId('current_status_id')->constrained('statuses', 'status_id');
-            $table->foreignId('next_status_id')->constrained('statuses', 'status_id');
-            $table->primary(['current_status_id', 'next_status_id']);
-            });
+            $table->id(); // Add a primary key
+            $table->foreignId('current_status_id')->constrained('statuses')->onDelete('cascade');
+            $table->foreignId('next_status_id')->constrained('statuses')->onDelete('cascade');
+            $table->unique(['current_status_id', 'next_status_id']);
+        });
     }
 
     /**
