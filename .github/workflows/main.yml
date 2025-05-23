@@ -1,0 +1,65 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+    # Frontend build
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build
+
+    # PHP 8.2 specific setup
+    - name: Setup PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, ctype, fileinfo, openssl, pdo, mysql, pdo_mysql, tokenizer, xml, dom
+        ini-values: post_max_size=256M, upload_max_filesize=256M
+        coverage: none
+        tools: composer
+
+    - name: Install Backend Dependencies
+      working-directory: ./backend
+      run: |
+        composer validate
+        composer install --no-dev --prefer-dist --optimize-autoloader
+
+    # Deployment
+    - name: Deploy Backend
+      run: rsync -avz --delete --exclude=.env -e "ssh -i ~/.ssh/id_rsa" ./backend/ user@${{ secrets.SERVER_IP }}:/var/www/project/backend/
+
+    - name: Deploy Frontend Assets
+      run: rsync -avz --delete -e "ssh -i ~/.ssh/id_rsa" ./frontend/dist/ user@${{ secrets.SERVER_IP }}:/var/www/project/frontend/
+
+    # Server-side commands
+    - name: Run Database Migrations
+      run: ssh -i ~/.ssh/id_rsa user@${{ secrets.SERVER_IP }} "cd /var/www/project/backend && /usr/bin/php8.2 artisan migrate --force"
+
+    - name: Optimize Laravel
+      run: ssh -i ~/.ssh/id_rsa user@${{ secrets.SERVER_IP }} "cd /var/www/project/backend && /usr/bin/php8.2 artisan config:cache && /usr/bin/php8.2 artisan route:cache && /usr/bin/php8.2 artisan view:cache"
+
+    - name: Restart PHP 8.2 FPM
+      run: ssh -i ~/.ssh/id_rsa user@${{ secrets.SERVER_IP }} "sudo systemctl restart php8.2-fpm"
