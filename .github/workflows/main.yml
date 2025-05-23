@@ -49,10 +49,10 @@ jobs:
 
     # Deployment
     - name: Deploy Backend
-      run: rsync -avz --delete --exclude=.env -e "ssh -i ~/.ssh/id_rsa" ./backend/ user@${{ secrets.SERVER_IP }}:/var/www/project/backend/
+      run: rsync -avz --delete --exclude=.env -e "ssh -i ~/.ssh/id_rsa" ./backend/ root@${{ secrets.SERVER_IP }}:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/backend/
 
     - name: Deploy Frontend Assets
-      run: rsync -avz --delete -e "ssh -i ~/.ssh/id_rsa" ./frontend/dist/ user@${{ secrets.SERVER_IP }}:/var/www/project/frontend/
+      run: rsync -avz --delete -e "ssh -i ~/.ssh/id_rsa" ./frontend/dist/ root@${{ secrets.SERVER_IP }}:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/frontend/
 
     # Server-side commands
     - name: Run Database Migrations
