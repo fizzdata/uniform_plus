@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->id();
+            $table->string('supplier_name');
             $table->bigInteger('shopify_product_id');
             $table->integer('quantity_ordered');
             $table->integer('quantity_received')->default(0);

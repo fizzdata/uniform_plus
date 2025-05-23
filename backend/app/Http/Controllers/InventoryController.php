@@ -7,8 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use App\Helpers\ShopifyInventoryHelper;
-
-
+use App\Models\Inventory;
 
 class InventoryController extends Controller
 {
@@ -21,6 +20,8 @@ class InventoryController extends Controller
 
    public function getInventory(Request $request)
     {
+        return response()->json(Inventory::demo());
+
         $request->validate(['shop' => 'required|string']);
         $shop = $request->input('shop');
 
@@ -33,6 +34,7 @@ class InventoryController extends Controller
         'X-Shopify-Access-Token' => $storedShop->access_token,
         'Content-Type' => 'application/json',
     ])->get("https://{$shop}/admin/api/2024-10/inventory_levels.json");
+
 
         return response()->json($response);
     }

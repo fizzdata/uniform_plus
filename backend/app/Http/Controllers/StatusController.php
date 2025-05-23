@@ -17,7 +17,7 @@ class StatusController extends Controller
 
     $statuses = DB::table('statuses')
             ->select('id', 'name', 'color','sequence', 'description')
-            ->orderBy('sequence')
+            ->orderBy('id')
             ->get();
 
         // Return the statuses as a JSON response

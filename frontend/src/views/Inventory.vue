@@ -188,14 +188,11 @@ const fetchInventory = async (page = 1) => {
             totalItems.value = response.data.total;
             currentPage.value = response.data.current_page;
 
-            alert(`Status updated to "${nextStatus.name}"`, 'success'); 
         } else {
             console.error('Error updating status:', await response.json());
-            alert('Failed to update order status. Please try again.', 'error');
         }
    } catch (error) {
         console.error('Request failed:', error);
-        alert('Network error. Please check your connection.', 'error');
     }
 
     loading.value = false;

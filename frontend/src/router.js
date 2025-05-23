@@ -11,7 +11,7 @@ const routes = [
   { path: '/orders', component: Orders },
   { path: '/install', component: install },
   { path: '/inventory', component: Inventory },
-  { path: '/purchase-order', component: PurchaseOrder },
+  { path: '/purchase-orders', component: PurchaseOrder },
 ];
 
 const router = createRouter({

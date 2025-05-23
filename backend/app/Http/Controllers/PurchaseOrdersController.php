@@ -14,18 +14,7 @@ class PurchaseOrdersController extends Controller
    $perPage = $request->input('per_page', 20);
     
     $orders = DB::table('purchase_orders')
-        ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
-        ->join('products', 'purchase_orders.product_id', '=', 'products.id')
-        ->select(
-            'purchase_orders.id',
-            'suppliers.name as supplier',
-            'products.id as product_id',
-            'products.name as product_name',
-            'purchase_orders.ordered',
-            'purchase_orders.received',
-            'purchase_orders.status',
-            'purchase_orders.created_at'
-        )
+        ->select('*')
         ->paginate($perPage);
 
     return response()->json([

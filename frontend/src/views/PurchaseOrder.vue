@@ -43,6 +43,7 @@
               </th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
+              </th>
               <th scope="col" class="relative px-6 py-3">
                 <span class="sr-only">Actions</span>
               </th>
@@ -63,6 +64,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ item.received }}
+              </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                 <span :class="['px-2 py-1 rounded-full text-xs font-medium', statusBadgeClass(item.status)]">
                   {{ item.status }}
@@ -159,6 +161,9 @@ const selectedOrder = ref(null);
 const receiveQuantity = ref(0);
 const showReceiveModal = ref(false);
 
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
 // Computed properties
 const hasNextPage = computed(() => {
   return currentPage.value * itemsPerPage.value < totalOrders.value;
@@ -185,7 +190,7 @@ const statusBadgeClass = computed(() => {
 const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get('/api/purchase-orders', {
+    const response = await axios.get(`${apiUrl}/api/purchase-orders`, {
       params: {
         page: page,
         per_page: itemsPerPage.value
