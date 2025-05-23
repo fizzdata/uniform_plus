@@ -11,21 +11,30 @@ class ShopifyAuthController extends Controller
     protected $shopifyApiKey;
     protected $shopifyApiSecret;
     protected $redirectUri;
+    protected $scopes;
 
     public function __construct()
     {
         $this->shopifyApiKey = env('SHOPIFY_API_KEY');
         $this->shopifyApiSecret = env('SHOPIFY_API_SECRET');
         $this->redirectUri = env('SHOPIFY_REDIRECT_URI');
+
+        $this->scopes = 'read_orders,
+        write_orders,
+        read_inventory,
+        write_inventory,
+        read_locations,
+        write_locations'; 
+        
+        // Add necessary scopes
     }
 
     public function redirectToShopify(Request $request)
     {
         $shop = $request->input('shop');
-        $scopes = 'read_orders,write_orders'; // Add necessary scopes
         $installUrl = "https://{$shop}/admin/oauth/authorize?" . http_build_query([
             'client_id' => $this->shopifyApiKey,
-            'scope' => $scopes,
+            'scope' => $this->scopes,
             'redirect_uri' => $this->redirectUri,
             'state' => csrf_token(),
         ]);
