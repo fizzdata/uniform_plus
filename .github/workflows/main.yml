@@ -25,7 +25,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         run: 
-          npx nuxi generate
+          npm run build
 
       - name: Upload frontend build artifacts
         uses: actions/upload-artifact@v4
