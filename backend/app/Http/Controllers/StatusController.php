@@ -16,7 +16,7 @@ class StatusController extends Controller
         // Get all statuses
 
     $statuses = DB::table('statuses')
-            ->select('id', 'name', 'color','sequence', 'description')
+            ->select('id', 'name', 'color', 'description')
             ->orderBy('id')
             ->get();
 
