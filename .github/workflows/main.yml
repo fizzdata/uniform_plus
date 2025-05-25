@@ -104,5 +104,5 @@ jobs:
           mkdir -p ~/.ssh                       
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts  # Add this line to trust the server's host key
           
-          scp -i private_key.pem -r frontend/.output/public/* root@$SERVER_IP:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/frontend/
+          scp -i private_key.pem -r frontend/dist/* root@$SERVER_IP:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/frontend/
           scp -i private_key.pem -r backend/* root@$SERVER_IP:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/backend/
