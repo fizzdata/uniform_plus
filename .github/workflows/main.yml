@@ -1,0 +1,108 @@
+name: Deploy UniformPlus Project
+
+on:
+  push:
+    branches:
+      - main  # Adjust if using a different deployment branch
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: 
+          npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: 
+          npm run build
+
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist  # Ensure this path matches the build output
+          
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Add PHP 8.2 PPA and Install
+        run: |
+          sudo apt update
+          sudo apt install -y software-properties-common
+          sudo add-apt-repository -y ppa:ondrej/php
+          sudo apt update
+          sudo apt install -y php8.2-cli php8.2-common php8.2-mbstring php8.2-xml php8.2-curl unzip curl
+
+      - name: Verify PHP version
+        run: php -v
+
+      - name: Set Up Composer
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          mv composer.phar /usr/local/bin/composer
+
+      - name: Install Laravel dependencies
+        run: |
+          cd backend
+          composer install --no-dev --optimize-autoloader
+
+      - name: Run Laravel migrations (if necessary)
+        env:
+          DB_HOST: ${{ secrets.DBHOST }}
+          DB_USER: ${{ secrets.DBUSER }}
+          DB_PASSWORD: ${{ secrets.DBPASSWORD }}
+        run: |
+          cd backend
+          php artisan migrate --force
+
+  
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+    steps:
+      - name: Setup SSH Key from Base64
+        run: |
+          echo "${{ secrets.SERVER_SSH_KEY_64 }}" | base64 -d > private_key.pem
+          chmod 600 private_key.pem
+          
+      - name: Debug SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem root@${{ secrets.SERVER_IP }} "echo Connected"
+          rm private_key.pem
+
+        
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+            name: frontend-build
+            path: frontend/dist
+
+      - name: Deploy to Server
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          printf "%s" "${{ secrets.SERVER_SSH_KEY_64 }}" | base64 -d > private_key.pem
+          chmod 600 private_key.pem
+          
+          mkdir -p ~/.ssh                       
+          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts  # Add this line to trust the server's host key
+          
+          scp -i private_key.pem -r frontend/dist/* root@$SERVER_IP:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/frontend/
+          scp -i private_key.pem -r backend/* root@$SERVER_IP:/www/wwwroot/uniformplus.fizzdata.com/uniform_plus/backend/
