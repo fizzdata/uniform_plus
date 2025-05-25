@@ -20,7 +20,7 @@ class InventoryController extends Controller
 
    public function getInventory(Request $request)
     {
-        return response()->json(Inventory::demo());
+        //return response()->json(Inventory::demo());
 
         $request->validate(['shop' => 'required|string']);
         $shop = $request->input('shop');
