@@ -294,7 +294,7 @@ const newOrder = ref({
 const fetchItems = async () => {
   try {
     loadingItems.value = true;
-    const response = await axios.get(`${apiUrl}/api/products?shop${shop}`); // Adjust the endpoint as needed
+    const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
     items.value = response.data;
   } catch (error) {
     console.error("Error fetching items:", error);
@@ -387,7 +387,7 @@ const statusBadgeClass = computed(() => {
 const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get(`${apiUrl}/api/purchase-orders?shop${shop}`, {
+    const response = await axios.get(`${apiUrl}/api/purchase-orders?shop=${shop}`, {
       params: {
         page: page,
         per_page: itemsPerPage.value,
