@@ -17,12 +17,12 @@ class OrdersController extends Controller
 
     // Fetch orders from Shopify
     $response = Http::withHeaders([
-        'X-Shopify-Access-Token' => $request->access_token,
-    ])->get("https://{$request->shop}/admin/api/2024-10/orders.json?status=any");
+        'X-Shopify-Access-Token' => $request->shop->access_token,
+    ])->get("https://{$request->shop->shop_domain}/admin/api/2024-10/orders.json?status=any");
 
         if ($response->failed()) {
                 Log::error('Shopify API error', [
-                    'shop' => $request->shop,
+                    'shop' => $request->shop->shop_domain,
                     'status' => $response->status(),
                     'response' => $response->json(),
     ]);

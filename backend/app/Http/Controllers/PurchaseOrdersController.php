@@ -17,6 +17,7 @@ class PurchaseOrdersController extends Controller
     
     $orders = DB::table('purchase_orders')
         ->select('*')
+        ->where('shop_id', $request->shop->id)
         ->paginate($perPage);
 
     return response()->json([

@@ -29,8 +29,7 @@ class VerifyShop
             return response()->json(['success' => false, 'error' => 'Shop not found']);
         }
 
-        $request->merge(['shop' => $storedShop->shop_domain]);
-        $request->merge(['access_token' => $storedShop->access_token]);
+        $request->merge(['shop' => $storedShop]);
 
         return $next($request);
     }
