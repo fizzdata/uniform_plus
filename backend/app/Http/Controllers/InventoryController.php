@@ -171,4 +171,21 @@ try {
             'data' => $response
         ]);
     }
+
+    public function get_locations(Request $request)
+    {
+        // Fetch locations from Shopify
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $request->access_token,
+        ])->get("https://{$request->shop}/admin/api/2024-10/locations.json");
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Failed to fetch locations', 'details' => $response->json()], $response->status());
+        }
+
+        return response()->json([
+            'data' => $response->json()['locations'],
+            'success' => true
+        ]);
+    }
 }

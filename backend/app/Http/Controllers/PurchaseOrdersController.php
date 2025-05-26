@@ -55,38 +55,41 @@ public function store(Request $request)
 
 
 }
-public function receive($orderId, Request $request)
+public function receive(Request $request)
 {
 
     $validate = Validator::make($request->all(), [
         'quantity' => 'required|integer|min:1',
+        'location_id' => 'required|integer',
     ]);
     if ($validate->fails()) {
         return response()->json(['error' => $validate->errors()], 422);
     }
 
-    DB::transaction(function () use ($orderId, $request) {
+    DB::transaction(function () use ($request) {
         // Update purchase order
         DB::table('purchase_orders')
-            ->where('id', $orderId)
+            ->where('id', $request->order_id)
             ->update([
                 'quantity_received' => DB::raw("quantity_received + {$request->quantity}"),
-                'status' => $this->calculateStatus($orderId, $request->quantity),
+                'status' => $this->calculateStatus($request->order_id, $request->quantity),
                 'received_at' => now()
             ]);
 
         // Update Shopify inventory
-        $order = DB::table('purchase_orders')->find($orderId);
-        Http::withHeaders([
-        'X-Shopify-Access-Token' => $request->access_token,
-        ])->post("https://{$request->shop}/admin/api/2024-10/inventory_levels/adjust.json", [
-                'inventory_item_id' => $order->shopify_product_id,
-                'location_id' => 'your-location-id',
-                'available_adjustment' => $request->quantity
-            ]);
+        $order = DB::table('purchase_orders')->find($request->order_id);
+        
+            
+        $adjustmentResponse = Http::withHeaders([
+            'X-Shopify-Access-Token' => $request->access_token,
+        ])->post("https://{$request->shop}/admin/api/2024-10/inventory_levels/set.json", [
+            'location_id' => $request->location_id,          // From step 1
+            'inventory_item_id' => $order->shopify_product_id,   
+            'available' => $order->quantity_received
+        ]);
     });
 
-    return response()->json(['success' => true]);
+    return response()->json(['success' => true, 'adjustmentResponse' => $adjustmentResponse]);
 }
 
 private function calculateStatus($orderId, $receivedQuantity)
