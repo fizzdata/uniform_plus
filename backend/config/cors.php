@@ -16,11 +16,12 @@ return [
     */
 
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'graphql', 'graphql-playground'],
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
 
-    'allowed_origins' => ['*'],
+    'allowed_headers' => ['Content-Type', 'X-Requested-With', 'Authorization'],
+
+    'allowed_origins' => ['localhost:5173', 'front-uniformplus.fizzdata.com'],
 
     'allowed_origins_patterns' => [],
 
