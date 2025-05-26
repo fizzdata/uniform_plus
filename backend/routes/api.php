@@ -15,7 +15,10 @@ use App\Http\Controllers\PurchaseOrdersController;
 
 
 Route::middleware(VerifyShop::class)->group(function () {
-Route::get('/shopify/install');
+    
+Route::get('/shopify/install', function (Request $request) {
+    return response()->json(['success' => true, 'shop' => $request->shop]);
+})->name('shopify.install');
 
 Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
 
