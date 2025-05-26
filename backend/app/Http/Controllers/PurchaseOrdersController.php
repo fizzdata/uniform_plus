@@ -45,7 +45,7 @@ public function store(Request $request)
     $orderId = DB::table('purchase_orders')->insertGetId([
         'shopify_product_id' => $request->shopify_product_id,
         'quantity_ordered' => $request->quantity_ordered,
-        'supplier' => $request->supplier,
+        'supplier_name' => $request->supplier,
         'status' => 'pending',
         'created_at' => now(),
         'updated_at' => now(),
