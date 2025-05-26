@@ -374,7 +374,7 @@ const createPurchaseOrder = async () => {
         payload
       );
     } else {
-      const response = await axios.post(`${apiUrl}/purchase-order`, payload);
+      const response = await axios.post(`${apiUrl}/api/purchase-order`, payload);
       if (response?.data?.success) {
         toast(response.data.message || "Order created successfully!", {
           type: "success",
