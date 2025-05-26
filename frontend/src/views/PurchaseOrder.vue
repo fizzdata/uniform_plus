@@ -277,8 +277,11 @@ const receiveQuantity = ref(0);
 const showReceiveModal = ref(false);
 const showCreateOrderModal = ref(false);
 const items = ref([]);
+const isSubmitting = ref(false);
+const loadingItems = ref(false);
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
+const shop = localStorage.getItem('shop_name') || '';
 
 // New order form
 const newOrder = ref({
@@ -287,19 +290,19 @@ const newOrder = ref({
   quantity: 1,
 });
 
-// Fetch items from API
-// const fetchItems = async () => {
-//   try {
-//     loadingItems.value = true;
-//     const response = await axios.get(`${apiUrl}/items`); // Adjust the endpoint as needed
-//     items.value = response.data;
-//   } catch (error) {
-//     console.error("Error fetching items:", error);
-//     errorMessage.value = "Failed to load items. Please try again.";
-//   } finally {
-//     loadingItems.value = false;
-//   }
-// };
+//Fetch items from API
+const fetchItems = async () => {
+  try {
+    loadingItems.value = true;
+    const response = await axios.get(`${apiUrl}/api/products?shop${shop}`); // Adjust the endpoint as needed
+    items.value = response.data;
+  } catch (error) {
+    console.error("Error fetching items:", error);
+    errorMessage.value = "Failed to load items. Please try again.";
+  } finally {
+    loadingItems.value = false;
+  }
+};
 
 // Create new purchase order
 const createPurchaseOrder = async () => {
@@ -320,6 +323,7 @@ const createPurchaseOrder = async () => {
     const response = await axios.post(`${apiUrl}/purchase-orders`, {
       supplier: newOrder.value.supplier,
       itemId: newOrder.value.itemId,
+      shop: shop,
       quantity: Number(newOrder.value.quantity),
     });
 
@@ -383,7 +387,7 @@ const statusBadgeClass = computed(() => {
 const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get(`${apiUrl}/api/purchase-orders`, {
+    const response = await axios.get(`${apiUrl}/api/purchase-orders?shop${shop}`, {
       params: {
         page: page,
         per_page: itemsPerPage.value,
@@ -415,6 +419,7 @@ const submitReceive = async () => {
       `/api/purchase-orders/${selectedOrder.value.id}/receive`,
       {
         quantity: receiveQuantity.value,
+        shop: shop,
       }
     );
 

@@ -23,6 +23,8 @@ class ShopifyAuthController extends Controller
         write_orders,
         read_inventory,
         write_inventory,
+        read_products,
+        write_products,
         read_locations,
         write_locations,
         unauthenticated_read_product_listings '; 

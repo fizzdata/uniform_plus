@@ -129,7 +129,7 @@ import { useShopifyOrders } from '../composables/useShopifyOrders';
 import { onMounted } from 'vue';
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
-const shopName = ref('');
+const shop = localStorage.getItem('shop');
 const status = ref('');
 const statuses = ref([]);
 const { 
@@ -162,7 +162,7 @@ const updateOrderStatus = async (order, direction) => {
     const nextStatus = statuses.value[nextIndex] || statuses.value[currentIndex]; // Prevent invalid updates
 
     try {
-        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}`, {
+        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}?shop=${shop}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
             // body: JSON.stringify({ status_id: nextStatus.id }), // If needed for update
@@ -195,7 +195,10 @@ const getNextStatus = (currentStatusId) => {
 
 const fetchStatuses = async () => {
     try {
-        const response = await fetch(`${apiUrl}/api/statuses`);
+        const response = await fetch(`${apiUrl}/api/statuses?shop=${shop}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
         statuses.value = await response.json();
     } catch (error) {
         console.error('Error fetching statuses:', error);

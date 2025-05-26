@@ -159,7 +159,7 @@ const totalItems = ref(0);
 const itemsPerPage = ref(25);
 const showMoveModal = ref(false);
 const selectedItem = ref(null);
-const shop = localStorage.getItem('shop_name') || '';
+const shop = localStorage.getItem('shop_name');
 
 
 // Computed properties
@@ -209,6 +209,7 @@ const handleTransfer = async (transferData) => {
   try {
     await axios.post('/api/inventory/transfers', {
       item_id: selectedItem.value.id,
+      shop: shop,
       ...transferData
     });
     
