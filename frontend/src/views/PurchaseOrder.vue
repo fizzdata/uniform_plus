@@ -359,6 +359,7 @@ const createPurchaseOrder = async () => {
       supplier: newOrder.value.supplier,
       shopify_product_id: newOrder.value.itemId,
       quantity_ordered: Number(newOrder.value.quantity),
+      shop: shop,
     };
 
     if (isEdit.value) {
