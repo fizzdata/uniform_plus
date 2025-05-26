@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
             $table->string('supplier_name');
             $table->bigInteger('shopify_product_id');
+            $table->bigInteger('inventory_item_id');
             $table->integer('quantity_ordered');
             $table->integer('quantity_received')->default(0);
             $table->enum('status', ['pending', 'partial', 'received'])->default('pending');

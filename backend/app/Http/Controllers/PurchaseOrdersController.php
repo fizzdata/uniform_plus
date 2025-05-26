@@ -37,6 +37,8 @@ public function store(Request $request)
         'shopify_product_id' => 'required|integer',
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
+        'inventory_item_id' => 'required|integer',
+
     ]);
 
     if ($validate->fails()) {
@@ -50,6 +52,7 @@ public function store(Request $request)
         'shopify_product_id' => $request->shopify_product_id,
         'quantity_ordered' => $request->quantity_ordered,
         'supplier_name' => $request->supplier,
+        'inventory_item_id' => $request->inventory_item_id,
         'status' => 'pending',
         'created_at' => now(),
         'updated_at' => now(),
@@ -65,8 +68,6 @@ public function receive(Request $request)
     $validate = Validator::make($request->all(), [
         'quantity' => 'required|integer|min:1',
         'location_id' => 'required|integer',
-        'inventory_item_id' => 'required|integer',
-        'order_id' => 'required|integer',
     ]);
     if ($validate->fails()) {
         return response()->json(['error' => $validate->errors()], 422);
@@ -90,7 +91,7 @@ public function receive(Request $request)
             'X-Shopify-Access-Token' => $request->shop['access_token'],
         ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
             'location_id' => $request->location_id,          // From step 1
-            'inventory_item_id' => $request->inventory_item_id,   
+            'inventory_item_id' => $order->inventory_item_id,   
             'available' => $order->quantity_received
         ]);
     });
