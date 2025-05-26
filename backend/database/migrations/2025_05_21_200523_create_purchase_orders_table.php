@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
             $table->string('supplier_name');
             $table->bigInteger('shopify_product_id');
             $table->integer('quantity_ordered');

@@ -33,7 +33,7 @@ public function store(Request $request)
 {
 
     header('Access-Control-Allow-Origin: *');
-    
+
     $validate = Validator::make($request->all(), [
         'shopify_product_id' => 'required|integer',
         'quantity_ordered' => 'required|integer|min:1',
@@ -44,7 +44,10 @@ public function store(Request $request)
         return response()->json(['error' => $validate->errors()], 422);
     }
 
+    $shop_id = DB::table('shops')->where('shopify_domain', $request->shop)->value('id');
+
     $orderId = DB::table('purchase_orders')->insertGetId([
+        'shop_id' => $shop_id,
         'shopify_product_id' => $request->shopify_product_id,
         'quantity_ordered' => $request->quantity_ordered,
         'supplier_name' => $request->supplier,
