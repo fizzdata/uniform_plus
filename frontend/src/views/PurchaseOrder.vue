@@ -289,6 +289,7 @@ import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import AppDialog from "@/components/Dialog.vue";
 import IconPensilSquare from "@/components/icons/IconPensilSquare.vue";
+import { toast } from "vue3-toastify";
 
 // Reactive state
 const orders = ref([]);
@@ -367,6 +368,11 @@ const createPurchaseOrder = async () => {
       );
     } else {
       const response = await axios.post(`${apiUrl}/purchase-order`, payload);
+      if (response?.data?.success) {
+        toast(response.data.message || "Order created successfully!", {
+          type: "success",
+        });
+      }
     }
 
     // Optionally refresh list or add new item to list
@@ -521,6 +527,9 @@ const submitReceive = async () => {
     );
 
     if (response.data.success) {
+      toast(response.data.message || "Order received successfully!", {
+        type: "success",
+      });
       // Update local state
       const updatedOrder = orders.value.find(
         (o) => o.id === selectedOrder.value.id
