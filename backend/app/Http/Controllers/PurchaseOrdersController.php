@@ -32,8 +32,6 @@ class PurchaseOrdersController extends Controller
 public function store(Request $request)
 {
 
-    header('Access-Control-Allow-Origin: *');
-
     $validate = Validator::make($request->all(), [
         'shopify_product_id' => 'required|integer',
         'quantity_ordered' => 'required|integer|min:1',

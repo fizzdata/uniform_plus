@@ -21,8 +21,7 @@ return [
 
     'allowed_headers' => ['Content-Type', 'X-Requested-With', 'Authorization'],
 
-    'allowed_origins' => ['localhost:5173', 'front-uniformplus.fizzdata.com'],
-
+    'allowed_origins' => ['http://localhost:5173', 'https://front-uniformplus.fizzdata.com'], 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
