@@ -65,6 +65,8 @@ public function receive(Request $request)
     $validate = Validator::make($request->all(), [
         'quantity' => 'required|integer|min:1',
         'location_id' => 'required|integer',
+        'inventory_item_id' => 'required|integer',
+        'order_id' => 'required|integer',
     ]);
     if ($validate->fails()) {
         return response()->json(['error' => $validate->errors()], 422);
@@ -88,7 +90,7 @@ public function receive(Request $request)
             'X-Shopify-Access-Token' => $request->shop['access_token'],
         ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
             'location_id' => $request->location_id,          // From step 1
-            'inventory_item_id' => $order->shopify_product_id,   
+            'inventory_item_id' => $request->inventory_item_id,   
             'available' => $order->quantity_received
         ]);
     });

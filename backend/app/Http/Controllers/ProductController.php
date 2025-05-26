@@ -13,7 +13,7 @@ class ProductController extends Controller
         $perPage = $request->input('per_page', 20);
 
         $response = Http::withHeaders([
-            'X-Shopify-Access-Token' => $request->access_token,
+            'X-Shopify-Access-Token' => $request->shop['access_token'],
         ])->get("https://{$request->shop['shop_domain']}/admin/api/2024-10/products.json", [
             'fields' => 'id,title,variants',
             'limit' => 250
