@@ -77,7 +77,7 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.id }}
+                {{ item.supplier_name }}
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
@@ -85,7 +85,7 @@
                 #{{ item.shopify_product_id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.supplier_name }}
+                {{ getItemName(item.shopify_product_id) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ item.quantity_ordered }}
@@ -340,6 +340,11 @@ const fetchItems = async () => {
   }
 };
 
+const getItemName = (data) => {
+  const filterItem = items.value.find((item) => item.value === data);
+  return filterItem ? filterItem.label : "N/a";
+};
+
 const createPurchaseOrder = async () => {
   try {
     isSubmitting.value = true;
@@ -561,5 +566,6 @@ const calculateStatus = (order) => {
 // Lifecycle hooks
 onMounted(() => {
   fetchOrders();
+  fetchItems();
 });
 </script>
