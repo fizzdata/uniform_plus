@@ -22,13 +22,6 @@ class InventoryController extends Controller
     {
         //return response()->json(Inventory::demo());
 
-        $request->validate(['shop' => 'required|string']);
-        $shop = $request->input('shop');
-
-        $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
-        if (!$storedShop) {
-            return response()->json(['error' => 'Shop not found']);
-        }
 
 
 
@@ -64,9 +57,9 @@ GRAPHQL;
 
 try {
         $response = Http::withHeaders([
-            'X-Shopify-Access-Token' => $storedShop->access_token,
+            'X-Shopify-Access-Token' => $request->access_token,
             'Content-Type' => 'application/json',
-        ])->post("https://{$shop}/admin/api/2024-10/graphql.json", [
+        ])->post("https://{$request->shop}/admin/api/2024-10/graphql.json", [
             'query' => $graphqlQuery
         ]);
 
@@ -118,21 +111,11 @@ try {
 
         ]);
 
-        $request->validate(['shop' => 'required|string']);
-        $shop = $request->input('shop');
-
-
-        $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
-        if (!$storedShop) {
-            return response()->json(['error' => 'Shop not found'], 404);
-        }
-        
-       
 
         // Update Shopify inventory
         $response = ShopifyInventoryHelper::adjustInventory(
-            $storedShop->shop_domain,
-            $storedShop->access_token,
+            $request->shop_domain,
+            $request->access_token,
             $validated['shopify_item_id'],
             $validated['shopify_location_id'],
             $validated['quantity'],
@@ -165,19 +148,10 @@ try {
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $request->validate(['shop' => 'required|string']);
-        $shop = $request->input('shop');
-
-
-        $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
-        if (!$storedShop) {
-            return response()->json(['error' => 'Shop not found'], 404);
-        }
-
         // Execute transfer through Shopify API
         $response = ShopifyInventoryHelper::moveInventory(
-            $storedShop->shop_domain,
-            $storedShop->access_token,
+            $request->shop_domain,
+            $request->access_token,
             $validated['shopify_item_id'],
             $validated['from_location_id'],
             $validated['to_location_id'],

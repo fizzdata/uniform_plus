@@ -24,7 +24,8 @@ class ShopifyAuthController extends Controller
         read_inventory,
         write_inventory,
         read_locations,
-        write_locations'; 
+        write_locations,
+        unauthenticated_read_product_listings '; 
         
         // Add necessary scopes
     }

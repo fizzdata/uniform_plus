@@ -46,7 +46,7 @@ public function store(Request $request)
 
     return response()->json(['success' => true, 'order_id' => $orderId]);
 
-    
+
 }
 public function receive($orderId, Request $request)
 {
@@ -62,8 +62,9 @@ public function receive($orderId, Request $request)
 
         // Update Shopify inventory
         $order = DB::table('purchase_orders')->find($orderId);
-        Http::withHeaders([/* shopify headers */])
-            ->post("https://store.myshopify.com/admin/api/2024-10/inventory_levels/adjust.json", [
+        Http::withHeaders([
+        'X-Shopify-Access-Token' => $request->access_token,
+        ])->post("https://{$request->shop}/admin/api/2024-10/inventory_levels/adjust.json", [
                 'inventory_item_id' => $order->shopify_product_id,
                 'location_id' => 'your-location-id',
                 'available_adjustment' => $request->quantity
