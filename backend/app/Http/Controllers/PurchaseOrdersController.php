@@ -89,7 +89,7 @@ public function receive(Request $request)
         ]);
     });
 
-    return response()->json(['success' => true, 'adjustmentResponse' => $adjustmentResponse]);
+    return response()->json(['success' => true, 'message' => 'Order received successfully']);
 }
 
 private function calculateStatus($orderId, $receivedQuantity)

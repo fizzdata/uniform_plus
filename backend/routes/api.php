@@ -33,7 +33,7 @@ Route::post('/purchase-order', [PurchaseOrdersController::class, 'store'])->name
 Route::post('/purchase-orders/{order_id}/receive', [PurchaseOrdersController::class, 'receive'])->name('purchase_orders.receive');
 
 
-Route::get('/inventory/locations', [InventoryController::class, 'getLocations'])->name('inventory.locations');
+Route::get('/inventory/locations', [InventoryController::class, 'get_locations'])->name('inventory.locations');
 Route::get('/inventory', [InventoryController::class, 'getInventory'])->name('inventory.get');
 Route::post('/inventory/receive', [InventoryController::class, 'receiveItems'])->name('inventory.receive');
 
