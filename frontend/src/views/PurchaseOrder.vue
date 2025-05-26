@@ -199,9 +199,10 @@
         </button>
         <button
           @click="submitReceive"
+          :disabled="isSubmitting"
           class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
         >
-          Confirm Receive
+          {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
         </button>
       </template>
     </AppDialog>
@@ -518,6 +519,8 @@ const openReceiveModal = async (order) => {
 const submitReceive = async () => {
   try {
     if (receiveQuantity.value <= 0) return;
+
+    isSubmitting.value = true;
     const response = await axios.post(
       `${apiUrl}/api/purchase-orders/${selectedOrder.value.id}/receive?shop=${shop}`,
       {
@@ -527,6 +530,8 @@ const submitReceive = async () => {
     );
 
     if (response.data.success) {
+      isSubmitting.value = false;
+
       toast(response.data.message || "Order received successfully!", {
         type: "success",
       });
@@ -542,6 +547,7 @@ const submitReceive = async () => {
   } catch (error) {
     errorMessage.value = "Failed to update order: " + error.message;
     console.error("Receive error:", error);
+    isSubmitting.value = false;
   }
 };
 
