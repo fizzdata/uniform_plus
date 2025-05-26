@@ -44,7 +44,7 @@ public function store(Request $request)
         return response()->json(['error' => $validate->errors()], 422);
     }
 
-    $shop_id = DB::table('shops')->where('shopify_domain', $request->shop)->value('id');
+    $shop_id = DB::table('shops')->where('shop_domain', $request->shop)->value('id');
 
     $orderId = DB::table('purchase_orders')->insertGetId([
         'shop_id' => $shop_id,
