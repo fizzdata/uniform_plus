@@ -29,9 +29,9 @@ class VerifyShop
                 return response()->json(['success' => false, 'error' => 'Shop not found']);
             }
 
-            // Convert to an array before merging
-            $request->merge(['shop' => (array) $storedShop]);
-            
+            // Convert to an object before merging
+            $request->merge(['shop' => (object) $storedShop]);
+
         return $next($request);
     }
 }
