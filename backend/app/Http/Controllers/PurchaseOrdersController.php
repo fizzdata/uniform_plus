@@ -23,8 +23,31 @@ class PurchaseOrdersController extends Controller
         'current_page' => $orders->currentPage(),
         'per_page' => $orders->perPage(),
     ]);
+
+    
 }
 
+public function store(Request $request)
+{
+    $request->validate([
+        'shopify_product_id' => 'required|integer',
+        'quantity_ordered' => 'required|integer|min:1',
+        'supplier' => 'required|string|max:255',
+    ]);
+
+    $orderId = DB::table('purchase_orders')->insertGetId([
+        'shopify_product_id' => $request->shopify_product_id,
+        'quantity_ordered' => $request->quantity_ordered,
+        'supplier' => $request->supplier,
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return response()->json(['success' => true, 'order_id' => $orderId]);
+
+    
+}
 public function receive($orderId, Request $request)
 {
     DB::transaction(function () use ($orderId, $request) {

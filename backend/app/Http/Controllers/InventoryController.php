@@ -30,13 +30,82 @@ class InventoryController extends Controller
             return response()->json(['error' => 'Shop not found']);
         }
 
+
+
+
+$graphqlQuery = <<<GRAPHQL
+query {
+  inventoryItems(first: 250) {
+    edges {
+      node {
+        id
+        sku
+        variant {
+          product {
+            title
+          }
+          title
+        }
+        inventoryLevels(first: 250) {
+          edges {
+            node {
+              available
+              location {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+GRAPHQL;
+
+try {
         $response = Http::withHeaders([
-        'X-Shopify-Access-Token' => $storedShop->access_token,
-        'Content-Type' => 'application/json',
-    ])->get("https://{$shop}/admin/api/2024-10/inventory_levels.json");
+            'X-Shopify-Access-Token' => $storedShop->access_token,
+            'Content-Type' => 'application/json',
+        ])->post("https://{$shop}/admin/api/2024-10/graphql.json", [
+            'query' => $graphqlQuery
+        ]);
 
+        if ($response->failed()) {
+            return response()->json([
+                'error' => 'Shopify API request failed',
+                'details' => $response->body()
+            ], 500);
+        }
 
-        return response()->json($response);
+        $data = $response->json();
+
+        // Transform nested GraphQL response to clean JSON
+        $formatted = collect($data['data']['inventoryItems']['edges'])
+            ->map(function ($itemEdge) {
+                $item = $itemEdge['node'];
+                return [
+                    'sku' => $item['sku'],
+                    'product_title' => $item['variant']['product']['title'] ?? 'N/A',
+                    'variant_title' => $item['variant']['title'] ?? 'Default',
+                    'stock' => collect($item['inventoryLevels']['edges'])
+                        ->map(fn($levelEdge) => [
+                            'location' => $levelEdge['node']['location']['name'],
+                            'quantity' => $levelEdge['node']['available']
+                        ])
+                ];
+            });
+
+        return response()->json([
+            'data' => $formatted,
+            'success' => true
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
+    }
+
     }
 
     public function receiveItems(Request $request)

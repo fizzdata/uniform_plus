@@ -29,7 +29,8 @@ Route::get('/orders/update-status/{order_id}', [StatusController::class, 'update
 Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
 
 Route::get('/purchase-orders', [PurchaseOrdersController::class, 'index']);
-Route::post('/orders/{order}/receive', [PurchaseOrdersController::class, 'receive']);
+Route::post('/purchase-order', [PurchaseOrdersController::class, 'store'])->name('purchase_orders.store');
+Route::post('/purchase-orders/{order}/receive', [PurchaseOrdersController::class, 'receive']);
 
 
 Route::get('/inventory', [InventoryController::class, 'getInventory'])->name('inventory.get');
