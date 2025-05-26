@@ -129,7 +129,7 @@ import { useShopifyOrders } from '../composables/useShopifyOrders';
 import { onMounted } from 'vue';
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
-const shop = localStorage.getItem('shop');
+const shop = localStorage.getItem('shop_name');
 const status = ref('');
 const statuses = ref([]);
 const { 
