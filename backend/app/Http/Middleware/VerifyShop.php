@@ -23,14 +23,15 @@ class VerifyShop
             return response()->json(['success' => false, 'error' => 'Shop parameter is missing'], 400);
         }
 
-        $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
+            $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
 
-        if (!$storedShop) {
-            return response()->json(['success' => false, 'error' => 'Shop not found']);
-        }
+            if (!$storedShop) {
+                return response()->json(['success' => false, 'error' => 'Shop not found']);
+            }
 
-        $request->merge(['shop' => $storedShop]);
-
+            // Convert to an array before merging
+            $request->merge(['shop' => (array) $storedShop]);
+            
         return $next($request);
     }
 }
