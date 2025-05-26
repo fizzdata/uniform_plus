@@ -77,21 +77,21 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.suplyer }}
+                #{{ item.id }}
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.id }}
+                #{{ item.shopify_product_id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.name }}
+                {{ item.supplier_name }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.ordered }}
+                {{ item.quantity_ordered }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.received }}
+                {{ item.quantity_received }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
@@ -104,8 +104,14 @@
                 </span>
               </td>
               <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
+                <button
+                  @click="openCreateProductModal(item)"
+                  class="text-gray-600 hover:text-gray-900"
+                >
+                  <IconPensilSquare />
+                </button>
                 <button
                   @click="openReceiveModal(item)"
                   class="text-gray-600 hover:text-gray-900"
@@ -186,7 +192,11 @@
     </div>
 
     <!-- Create New Order -->
-    <AppDialog v-model="showCreateOrderModal" title="Create New Order">
+    <AppDialog
+      v-model="showCreateOrderModal"
+      title="Create New Order"
+      :onclose="resetForm()"
+    >
       <div class="space-y-4">
         <!-- Supplier Name -->
         <div>
@@ -210,8 +220,8 @@
             :disabled="loadingItems"
           >
             <option value="">Select an item</option>
-            <option v-for="item in items" :key="item.id" :value="item.id">
-              {{ item.name }} ({{ item.id }})
+            <option v-for="item in items" :key="item.id" :value="item.value">
+              {{ item.label }}
             </option>
           </select>
           <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
@@ -234,8 +244,8 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="text-red-500 text-sm">
-          {{ errorMessage }}
+        <div v-if="errorItemMessage" class="text-red-500 text-sm">
+          {{ errorItemMessage }}
         </div>
       </div>
 
@@ -264,11 +274,13 @@
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import AppDialog from "@/components/Dialog.vue";
+import IconPensilSquare from "@/components/icons/IconPensilSquare.vue";
 
 // Reactive state
 const orders = ref([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
 const itemsPerPage = ref(20);
@@ -281,7 +293,7 @@ const isSubmitting = ref(false);
 const loadingItems = ref(false);
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
-const shop = localStorage.getItem('shop_name') || '';
+const shop = localStorage.getItem("shop_name") || "";
 
 // New order form
 const newOrder = ref({
@@ -295,10 +307,15 @@ const fetchItems = async () => {
   try {
     loadingItems.value = true;
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
-    items.value = response.data;
+
+    items.value =
+      response?.data?.data?.map((item) => ({
+        label: item.title,
+        value: item.id,
+      })) || [];
   } catch (error) {
     console.error("Error fetching items:", error);
-    errorMessage.value = "Failed to load items. Please try again.";
+    errorItemMessage.value = "Failed to load items. Please try again.";
   } finally {
     loadingItems.value = false;
   }
@@ -308,7 +325,7 @@ const fetchItems = async () => {
 const createPurchaseOrder = async () => {
   try {
     isSubmitting.value = true;
-    errorMessage.value = "";
+    errorItemMessage.value = "";
 
     // Basic validation
     if (
@@ -316,16 +333,23 @@ const createPurchaseOrder = async () => {
       !newOrder.value.itemId ||
       !newOrder.value.quantity
     ) {
-      errorMessage.value = "Please fill in all fields";
+      errorItemMessage.value = "Please fill in all fields";
       return;
     }
 
-    const response = await axios.post(`${apiUrl}/purchase-orders`, {
-      supplier: newOrder.value.supplier,
-      itemId: newOrder.value.itemId,
-      shop: shop,
-      quantity: Number(newOrder.value.quantity),
-    });
+    const response = await axios.post(
+      `${apiUrl}/purchase-order`,
+      {
+        supplier: newOrder.value.supplier,
+        shopify_product_id: newOrder.value.itemId,
+        quantity_ordered: Number(newOrder.value.quantity),
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     // Add the new order to the list
     orders.value.unshift(response.data);
@@ -335,7 +359,7 @@ const createPurchaseOrder = async () => {
     showCreateOrderModal.value = false;
   } catch (error) {
     console.error("Error creating purchase order:", error);
-    errorMessage.value =
+    errorItemMessage.value =
       error.response?.data?.message ||
       "Failed to create order. Please try again.";
   } finally {
@@ -387,12 +411,15 @@ const statusBadgeClass = computed(() => {
 const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get(`${apiUrl}/api/purchase-orders?shop=${shop}`, {
-      params: {
-        page: page,
-        per_page: itemsPerPage.value,
-      },
-    });
+    const response = await axios.get(
+      `${apiUrl}/api/purchase-orders?shop=${shop}`,
+      {
+        params: {
+          page: page,
+          per_page: itemsPerPage.value,
+        },
+      }
+    );
 
     orders.value = response.data.data;
     totalOrders.value = response.data.total;
@@ -403,6 +430,15 @@ const fetchOrders = async (page = 1) => {
   } finally {
     loading.value = false;
   }
+};
+
+const openCreateProductModal = (order) => {
+  console.log("🚀 ~ openCreateProductModal ~ order:", order);
+  newOrder.value.supplier = order.supplier_name;
+  // newOrder.value.quantity = order.quantity_ordered
+  newOrder.value.itemId = order.shopify_product_id;
+
+  showCreateOrderModal.value = true;
 };
 
 const openReceiveModal = (order) => {
