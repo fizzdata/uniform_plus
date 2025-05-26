@@ -32,7 +32,7 @@ class OrdersController extends Controller
     $orders = $response->json()['orders'];
 
 
-    $orders = Orders::demo();
+    //$orders = Orders::demo();
 
 
     if (empty($orders)) :
@@ -49,20 +49,27 @@ $orderStatuses = DB::table('orders')
     $formattedOrders = [];
 
     foreach ($orders as $order):
+        $OrderId = (string) $order['name'];
         $shopifyOrderId = (string) $order['name'];
          // Ensure ID format consistency
            $latestStatus = (int) data_get($orderStatuses, $shopifyOrderId, 1); // Default status if missing
 
         $customerName = isset($order['customer']) ? "{$order['customer']['first_name']} {$order['customer']['last_name']}" : 'Guest Checkout';
 
+
+        $next_status = DB::table('status_transitions')
+            ->where('current_status_id', $latestStatus)
+            ->get();
+
         $formattedOrders[] = [
-            'id' => $shopifyOrderId,
+            'id' => $OrderId,
+            'Order_id' => $shopifyOrderId,
             'customer_name' => $customerName,
             'created_at' => $order['created_at'],
             'status_id' => $latestStatus,
             'amount' => $order['current_total_price'],
             'link' => $order['order_status_url'],
-        ];
+            'next_status' => $next_status->pluck('next_status_id')->toArray(),       ];
     endforeach;
 
     return response()->json(['orders' => $formattedOrders]);

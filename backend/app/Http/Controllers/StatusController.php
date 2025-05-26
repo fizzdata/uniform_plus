@@ -28,7 +28,13 @@ class StatusController extends Controller
     
  public function updateStatus(Request $request)
     {
+        $request->validate([
+            'order_id' => 'required|integer',
+            'next_status' => 'required|integer',
+        ]);
       try{
+
+
       
         // Get current status sequence
         $currentStatus = DB::table('orders')
@@ -38,9 +44,10 @@ class StatusController extends Controller
             ->first();
 
             // Get next allowed status
-        $nextStatus = DB::table('statuses')
-            ->where('sequence', ($currentStatus->sequence ?? 0) + 1)
-            ->first();
+        $nextStatus = DB::table('status_transitions')
+            ->where('current_status_id', $currentStatus->status_id)
+            ->where('next_status_id', $request->next_status)
+            ->exists();
 
             // Check if the requested status is valid
         if (!$nextStatus) {
@@ -52,13 +59,13 @@ class StatusController extends Controller
 
         Orders::updateOrCreate(
             ['shopify_order_id' => $request->order_id],
-            ['status_id' => $nextStatus->id]
+            ['status_id' => $request->nextStatus]
         );
 
         // Insert new status history record
         DB::table('order_status_history')->insert([
             'order_id' => $request->order_id,
-            'status_id' => $nextStatus->id,
+            'status_id' => $request->nextStatus,
             //'user_id' => auth()->id(),
             'changed_at' => now(),
         ]);

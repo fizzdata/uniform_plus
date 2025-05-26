@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Auth\Events\Validated;
+use Illuminate\Support\Facades\Validator;
 
 class PurchaseOrdersController extends Controller
 {
@@ -29,11 +31,16 @@ class PurchaseOrdersController extends Controller
 
 public function store(Request $request)
 {
-    $request->validate([
+
+    $validate = Validator::make($request->all(), [
         'shopify_product_id' => 'required|integer',
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
     ]);
+
+    if ($validate->fails()) {
+        return response()->json(['error' => $validate->errors()], 422);
+    }
 
     $orderId = DB::table('purchase_orders')->insertGetId([
         'shopify_product_id' => $request->shopify_product_id,
@@ -50,6 +57,14 @@ public function store(Request $request)
 }
 public function receive($orderId, Request $request)
 {
+
+    $validate = Validator::make($request->all(), [
+        'quantity' => 'required|integer|min:1',
+    ]);
+    if ($validate->fails()) {
+        return response()->json(['error' => $validate->errors()], 422);
+    }
+
     DB::transaction(function () use ($orderId, $request) {
         // Update purchase order
         DB::table('purchase_orders')

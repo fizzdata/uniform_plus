@@ -22,10 +22,6 @@ class InventoryController extends Controller
     {
         //return response()->json(Inventory::demo());
 
-
-
-
-
 $graphqlQuery = <<<GRAPHQL
 query {
   inventoryItems(first: 250) {

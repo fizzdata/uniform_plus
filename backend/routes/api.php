@@ -3,13 +3,14 @@
 use App\Models\Shop;
 use App\Models\Status;
 use Illuminate\Http\Request;
+use App\Http\Middleware\VerifyShop;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\StatusController;
-use App\Http\Controllers\PurchaseOrdersController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Middleware\VerifyShop;
+use App\Http\Controllers\PurchaseOrdersController;
 
 
 
@@ -20,6 +21,9 @@ Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.
 
 Route::get('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
 Route::get('/statuses', [StatusController::class, 'getStatus'])->middleware(['VerifyShop'])->name('statuses.index');
+
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+
 
 Route::get('/purchase-orders', [PurchaseOrdersController::class, 'index'])->name('purchase_orders.index');
 Route::post('/purchase-order', [PurchaseOrdersController::class, 'store'])->name('purchase_orders.store');
