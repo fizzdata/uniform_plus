@@ -77,21 +77,21 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.suplyer }}
+                {{ item.supplier_name }}
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.id }}
+                #{{ item.shopify_product_id }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.name }}
+                {{ getItemName(item.shopify_product_id) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.ordered }}
+                {{ item.quantity_ordered }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.received }}
+                {{ item.quantity_received }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
@@ -104,11 +104,17 @@
                 </span>
               </td>
               <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
                 <button
+                  @click="openCreateProductModal(item)"
+                  class="text-gray-600 hover:text-gray-900 cursor-pointer"
+                >
+                  <IconPensilSquare class="text-green-600" />
+                </button>
+                <button
                   @click="openReceiveModal(item)"
-                  class="text-gray-600 hover:text-gray-900"
+                  class="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
                   Add Received
                 </button>
@@ -145,48 +151,67 @@
     </div>
 
     <!-- Receive Quantity Modal -->
-    <div
-      v-if="showReceiveModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-    >
-      <div class="bg-white p-6 rounded-lg w-96">
-        <h3 class="text-lg font-bold mb-4">Receive Inventory</h3>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"
-            >Quantity to Receive
-          </label>
-          <input
-            type="number"
-            v-model.number="receiveQuantity"
-            :max="selectedOrder.ordered - selectedOrder.received"
-            min="1"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-          <p class="mt-2 text-sm text-gray-500">
-            Max receivable: {{ selectedOrder.ordered - selectedOrder.received }}
-          </p>
-        </div>
-
-        <div class="flex justify-end space-x-3">
-          <button
-            @click="showReceiveModal = false"
-            class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitReceive"
-            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Confirm Receive
-          </button>
-        </div>
+    <AppDialog v-model="showReceiveModal" title="Receive Inventory">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">
+          Quantity to Receive
+        </label>
+        <input
+          type="number"
+          v-model.number="receiveQuantity"
+          :max="
+            selectedOrder.quantity_ordered - selectedOrder.quantity_received
+          "
+          min="1"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+        />
+        <p class="mt-2 text-sm text-gray-500">
+          Max receivable:
+          {{ selectedOrder.quantity_ordered - selectedOrder.quantity_received }}
+        </p>
       </div>
-    </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Select Location
+        </label>
+        <select
+          v-model="selectedLocation"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+          :disabled="loadingLocations"
+        >
+          <option value="">Select an item</option>
+          <option v-for="item in locations" :key="item.id" :value="item.value">
+            {{ item.label }}
+          </option>
+        </select>
+        <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
+          Loading locations...
+        </p>
+      </div>
+
+      <template #actions="{ close }">
+        <button
+          @click="close"
+          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          @click="submitReceive"
+          :disabled="isSubmitting"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
+        >
+          {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
+        </button>
+      </template>
+    </AppDialog>
 
     <!-- Create New Order -->
-    <AppDialog v-model="showCreateOrderModal" title="Create New Order">
+    <AppDialog
+      v-model="showCreateOrderModal"
+      :title="isEdit ? 'Edit Order' : 'Create New Order'"
+    >
       <div class="space-y-4">
         <!-- Supplier Name -->
         <div>
@@ -210,8 +235,8 @@
             :disabled="loadingItems"
           >
             <option value="">Select an item</option>
-            <option v-for="item in items" :key="item.id" :value="item.id">
-              {{ item.name }} ({{ item.id }})
+            <option v-for="item in items" :key="item.id" :value="item.value">
+              {{ item.label }}
             </option>
           </select>
           <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
@@ -225,7 +250,7 @@
             >Quantity
           </label>
           <input
-            v-model="newOrder.quantity"
+            v-model.number="newOrder.quantity"
             type="number"
             min="1"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
@@ -234,8 +259,8 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="text-red-500 text-sm">
-          {{ errorMessage }}
+        <div v-if="errorItemMessage" class="text-red-500 text-sm">
+          {{ errorItemMessage }}
         </div>
       </div>
 
@@ -244,7 +269,7 @@
         <button
           type="button"
           @click="close"
-          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
         >
           Cancel
         </button>
@@ -252,9 +277,9 @@
           type="button"
           @click="createPurchaseOrder"
           :disabled="isSubmitting"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
         >
-          {{ isSubmitting ? "Creating..." : "Create Order" }}
+          {{ isSubmitting ? "Creating..." : isEdit ? "Edit" : "Create Order" }}
         </button>
       </template>
     </AppDialog>
@@ -264,11 +289,14 @@
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import AppDialog from "@/components/Dialog.vue";
+import IconPensilSquare from "@/components/icons/IconPensilSquare.vue";
+import { toast } from "vue3-toastify";
 
 // Reactive state
 const orders = ref([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
 const itemsPerPage = ref(20);
@@ -279,9 +307,12 @@ const showCreateOrderModal = ref(false);
 const items = ref([]);
 const isSubmitting = ref(false);
 const loadingItems = ref(false);
-
+const loadingLocations = ref(false);
+const locations = ref([]);
+const selectedLocation = ref("");
+const isEdit = ref(false);
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
-const shop = localStorage.getItem('shop_name') || '';
+const shop = localStorage.getItem("shop_name") || "";
 
 // New order form
 const newOrder = ref({
@@ -295,20 +326,29 @@ const fetchItems = async () => {
   try {
     loadingItems.value = true;
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
-    items.value = response.data;
+
+    items.value =
+      response?.data?.data?.map((item) => ({
+        label: item.title,
+        value: item.id,
+      })) || [];
   } catch (error) {
     console.error("Error fetching items:", error);
-    errorMessage.value = "Failed to load items. Please try again.";
+    errorItemMessage.value = "Failed to load items. Please try again.";
   } finally {
     loadingItems.value = false;
   }
 };
 
-// Create new purchase order
+const getItemName = (data) => {
+  const filterItem = items.value.find((item) => item.value === data);
+  return filterItem ? filterItem.label : "N/a";
+};
+
 const createPurchaseOrder = async () => {
   try {
     isSubmitting.value = true;
-    errorMessage.value = "";
+    errorItemMessage.value = "";
 
     // Basic validation
     if (
@@ -316,26 +356,42 @@ const createPurchaseOrder = async () => {
       !newOrder.value.itemId ||
       !newOrder.value.quantity
     ) {
-      errorMessage.value = "Please fill in all fields";
+      errorItemMessage.value = "Please fill in all fields";
       return;
     }
 
-    const response = await axios.post(`${apiUrl}/purchase-orders`, {
+    const payload = {
       supplier: newOrder.value.supplier,
-      itemId: newOrder.value.itemId,
+      shopify_product_id: newOrder.value.itemId,
+      quantity_ordered: Number(newOrder.value.quantity),
       shop: shop,
-      quantity: Number(newOrder.value.quantity),
-    });
+    };
 
-    // Add the new order to the list
-    orders.value.unshift(response.data);
+    if (isEdit.value) {
+      // TODO: Replace with your actual edit API endpoint
+      const response = await axios.put(
+        `${apiUrl}/purchase-order/${newOrder.value.id}`,
+        payload
+      );
+    } else {
+      const response = await axios.post(`${apiUrl}/purchase-order`, payload);
+      if (response?.data?.success) {
+        toast(response.data.message || "Order created successfully!", {
+          type: "success",
+        });
+      }
+    }
+
+    // Optionally refresh list or add new item to list
+    // orders.value.unshift(response.data);
+    // await fetchOrders();
 
     // Reset form and close modal
     resetForm();
     showCreateOrderModal.value = false;
   } catch (error) {
     console.error("Error creating purchase order:", error);
-    errorMessage.value =
+    errorItemMessage.value =
       error.response?.data?.message ||
       "Failed to create order. Please try again.";
   } finally {
@@ -355,7 +411,9 @@ const resetForm = () => {
 
 // Open create order modal
 const onClickNewOrderBtn = async () => {
+  isEdit.value = false;
   showCreateOrderModal.value = true;
+  resetForm();
   if (items.value.length === 0) {
     await fetchItems();
   }
@@ -384,15 +442,48 @@ const statusBadgeClass = computed(() => {
 });
 
 // Methods
+const fetchInventoryLocation = async () => {
+  try {
+    loadingLocations.value = true;
+    const response = await axios.get(
+      `${apiUrl}/api/inventory/locations?shop=${shop}`
+    );
+
+    if (response.data.success) {
+      locations.value = locations.value =
+        response?.data?.data?.map((item) => ({
+          label: `${item.name} - ${[
+            item.address1,
+            item.city,
+            item.province,
+            item.country,
+          ]
+            .filter(Boolean)
+            .join(" ")}`,
+          value: item.id,
+        })) || [];
+    }
+  } catch (error) {
+    errorMessage.value = "Failed to load orders: " + error.message;
+    console.error("Order fetch error:", error);
+  } finally {
+    loadingLocations.value = false;
+  }
+};
+
+// Methods
 const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
-    const response = await axios.get(`${apiUrl}/api/purchase-orders?shop=${shop}`, {
-      params: {
-        page: page,
-        per_page: itemsPerPage.value,
-      },
-    });
+    const response = await axios.get(
+      `${apiUrl}/api/purchase-orders?shop=${shop}`,
+      {
+        params: {
+          page: page,
+          per_page: itemsPerPage.value,
+        },
+      }
+    );
 
     orders.value = response.data.data;
     totalOrders.value = response.data.total;
@@ -405,35 +496,64 @@ const fetchOrders = async (page = 1) => {
   }
 };
 
-const openReceiveModal = (order) => {
+const openCreateProductModal = (order) => {
+  if (!order) return;
+
+  isEdit.value = true;
+
+  // Create a new object with the updated values
+  newOrder.value = {
+    ...newOrder.value, // Keep existing properties
+    supplier: order.supplier_name || "",
+    itemId: order.shopify_product_id || "",
+    quantity: order.quantity_ordered || 0,
+  };
+
+  showCreateOrderModal.value = true;
+};
+
+const openReceiveModal = async (order) => {
   selectedOrder.value = order;
-  receiveQuantity.value = order.ordered - order.received;
+  receiveQuantity.value = order.quantity_ordered - order.quantity_received;
   showReceiveModal.value = true;
+
+  if (locations.value.length === 0) {
+    await fetchInventoryLocation();
+  }
 };
 
 const submitReceive = async () => {
   try {
     if (receiveQuantity.value <= 0) return;
 
+    isSubmitting.value = true;
     const response = await axios.post(
-      `/api/purchase-orders/${selectedOrder.value.id}/receive`,
+      `${apiUrl}/api/purchase-orders/${selectedOrder.value.id}/receive?shop=${shop}`,
       {
         quantity: receiveQuantity.value,
-        shop: shop,
+        location_id: selectedLocation.value,
       }
     );
 
-    // Update local state
-    const updatedOrder = orders.value.find(
-      (o) => o.id === selectedOrder.value.id
-    );
-    updatedOrder.received += receiveQuantity.value;
-    updatedOrder.status = calculateStatus(updatedOrder);
+    if (response.data.success) {
+      isSubmitting.value = false;
 
-    showReceiveModal.value = false;
+      toast(response.data.message || "Order received successfully!", {
+        type: "success",
+      });
+      // Update local state
+      const updatedOrder = orders.value.find(
+        (o) => o.id === selectedOrder.value.id
+      );
+      updatedOrder.received += receiveQuantity.value;
+      updatedOrder.status = calculateStatus(updatedOrder);
+
+      showReceiveModal.value = false;
+    }
   } catch (error) {
     errorMessage.value = "Failed to update order: " + error.message;
     console.error("Receive error:", error);
+    isSubmitting.value = false;
   }
 };
 
@@ -446,5 +566,6 @@ const calculateStatus = (order) => {
 // Lifecycle hooks
 onMounted(() => {
   fetchOrders();
+  fetchItems();
 });
 </script>
