@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('quantity_ordered');
             $table->integer('quantity_received')->default(0);
             $table->enum('status', ['pending', 'partial', 'received'])->default('pending');
+            $table->boolean('paid');
             $table->timestamp('received_at')->nullable();
             $table->timestamps();
         });

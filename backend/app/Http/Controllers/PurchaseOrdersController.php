@@ -61,6 +61,31 @@ public function store(Request $request)
 
 
 }
+
+public function update(Request $request)
+{
+    $validate = Validator::make($request->all(), [
+        'quantity_ordered' => 'required|integer|min:1',
+        'supplier' => 'required|string|max:255',
+    ]);
+
+    if ($validate->fails()) {
+        return response()->json(['error' => $validate->errors()], 422);
+    }
+
+    DB::table('purchase_orders')
+        ->where('id', $$request->order_id)
+        ->update([
+            'quantity_ordered' => $request->quantity_ordered,
+            'supplier_name' => $request->supplier,
+            'updated_at' => now(),
+        ]);
+
+    return response()->json(['success' => true, 'message' => 'Order updated successfully']);
+}
+
+
+
 public function receive(Request $request)
 {
 

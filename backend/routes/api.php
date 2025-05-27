@@ -30,6 +30,7 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 
 Route::get('/purchase-orders', [PurchaseOrdersController::class, 'index'])->name('purchase_orders.index');
 Route::post('/purchase-order', [PurchaseOrdersController::class, 'store'])->name('purchase_orders.store');
+Route::post('/purchase-orders/{order_id}/update', [PurchaseOrdersController::class, 'update'])->name('purchase_orders.update');
 Route::post('/purchase-orders/{order_id}/receive', [PurchaseOrdersController::class, 'receive'])->name('purchase_orders.receive');
 
 
