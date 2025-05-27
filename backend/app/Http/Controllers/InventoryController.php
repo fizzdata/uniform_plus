@@ -22,70 +22,32 @@ class InventoryController extends Controller
     {
         //return response()->json(Inventory::demo());
 
-$graphqlQuery = <<<GRAPHQL
-query {
-  inventoryItems(first: 250) {
-    edges {
-      node {
-        id
-        sku
-        variant {
-          product {
-            title
-          }
-          title
-        }
-        inventoryLevels(first: 250) {
-          edges {
-            node {
-              available
-              location {
-                name
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-GRAPHQL;
+
 
 try {
-        $response = Http::withHeaders([
+        $ItemResponse = Http::withHeaders([
             'X-Shopify-Access-Token' => $request->shop['access_token'],
-            'Content-Type' => 'application/json',
-        ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/graphql.json", [
-            'query' => $graphqlQuery
-        ]);
+        ])->get("https://{$request->shop['shop_domain']}/admin/api/2024-10/products.json?limit=250");
+        
+        $data = $ItemResponse->json();
+        
+        // Extract inventory_item_ids from variants
+        $inventoryItemIds = collect($data['products'])->flatMap(function ($product) {
+            return collect($product['variants'])->pluck('inventory_item_id');
+        })->toArray();
+        
+        //dump($inventoryItemIds);
 
-        if ($response->failed()) {
-            return response()->json([
-                'error' => 'Shopify API request failed',
-                'details' => $response->body()
-            ], 500);
-        }
 
-        $data = $response->json();
-
-        // Transform nested GraphQL response to clean JSON
-        $formatted = collect($data['data']['inventoryItems']['edges'])
-            ->map(function ($itemEdge) {
-                $item = $itemEdge['node'];
-                return [
-                    'sku' => $item['sku'],
-                    'product_title' => $item['variant']['product']['title'] ?? 'N/A',
-                    'variant_title' => $item['variant']['title'] ?? 'Default',
-                    'stock' => collect($item['inventoryLevels']['edges'])
-                        ->map(fn($levelEdge) => [
-                            'location' => $levelEdge['node']['location']['name'],
-                            'quantity' => $levelEdge['node']['available']
-                        ])
-                ];
-            });
+        $singleItemResponse = Http::withHeaders([
+            'X-Shopify-Access-Token' => $request->shop['access_token'],
+        ])->get("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels.json", [
+            'inventory_item_ids' => implode(',', $inventoryItemIds)]);
+        
+        //dd($singleItemResponse->json());
 
         return response()->json([
-            'data' => $formatted,
+            'data' => $singleItemResponse->json()['inventory_levels'],
             'success' => true
         ]);
 
@@ -97,69 +59,79 @@ try {
 
     }
 
-    public function receiveItems(Request $request)
-    {
+    // public function receiveItems(Request $request)
+    // {
 
-         $validated = $request->validate([
-            'shopify_item_id' => 'required|string',
-            'shopify_location_id' => 'required|string',
-            'quantity' => 'required|integer|min:1',
+    //      $validated = $request->validate([
+    //         'shopify_item_id' => 'required|string',
+    //         'shopify_location_id' => 'required|string',
+    //         'quantity' => 'required|integer|min:1',
 
-        ]);
+    //     ]);
 
 
-        // Update Shopify inventory
-        $response = ShopifyInventoryHelper::adjustInventory(
-            $request->shop_domain,
-            $request->access_token,
-            $validated['shopify_item_id'],
-            $validated['shopify_location_id'],
-            $validated['quantity'],
+    //     // Update Shopify inventory
+    //     $response = ShopifyInventoryHelper::adjustInventory(
+    //         $request->shop_domain,
+    //         $request->access_token,
+    //         $validated['shopify_item_id'],
+    //         $validated['shopify_location_id'],
+    //         $validated['quantity'],
 
-        );
+    //     );
 
-        // Record action using Query Builder
-        DB::table('inventory_actions')->insert([
-            'shopify_item_id' => $validated['shopify_item_id'],
-            'shopify_location_id_to' => $validated['shopify_location_id'],
-            'quantity' => $validated['quantity'],
-            'action_type' => 'RECEIVE',
-            'performed_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+    //     // Record action using Query Builder
+    //     DB::table('inventory_actions')->insert([
+    //         'shopify_item_id' => $validated['shopify_item_id'],
+    //         'shopify_location_id_to' => $validated['shopify_location_id'],
+    //         'quantity' => $validated['quantity'],
+    //         'action_type' => 'RECEIVE',
+    //         'performed_at' => now(),
+    //         'created_at' => now(),
+    //         'updated_at' => now()
+    //     ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $response
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $response
+    //     ]);
+    // }
 
     public function transferItems(Request $request)
     {
         $validated = $request->validate([
-            'shopify_item_id' => 'required|string',
+            'inventory_item_id' => 'required|string',
             'from_location_id' => 'required|string',
             'to_location_id' => 'required|string',
             'quantity' => 'required|integer|min:1'
         ]);
 
-        // Execute transfer through Shopify API
-        $response = ShopifyInventoryHelper::moveInventory(
-            $request->shop_domain,
-            $request->access_token,
-            $validated['shopify_item_id'],
-            $validated['from_location_id'],
-            $validated['to_location_id'],
-            $validated['quantity'],
-        );
+       $deductResponse = Http::withHeaders([
+            'X-Shopify-Access-Token' => $request->shop['access_token'],
+        ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
+            'location_id' => $request->from_location_id,  // Location to deduct from
+            'inventory_item_id' => $request->inventory_item_id, // Item being transferred
+            'available_adjustment' => -$request->quantity // Negative value to reduce stock
+        ]);
 
+        dump($deductResponse->json());
+
+        $addResponse = Http::withHeaders([
+            'X-Shopify-Access-Token' => $request->shop['access_token'],
+        ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
+            'location_id' => $request->from_location_id,  // 
+            'inventory_item_id' => $request->inventory_item_id, // Item being transferred
+            'available_adjustment' => + $request->quantity // 
+        ]);
+
+        dump($addResponse->json());
         // Log transfer action
         DB::table('inventory_actions')->insert([
-            'shopify_item_id' => $validated['shopify_item_id'],
-            'shopify_location_id_from' => $validated['from_location_id'],
-            'shopify_location_id_to' => $validated['to_location_id'],
-            'quantity' => $validated['quantity'],
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $request->inventory_item_id,
+            'shopify_location_id_from' => $request->from_location_id,
+            'shopify_location_id_to' => $request->to_location_id,
+            'quantity' => $request->quantity,
             'action_type' => 'TRANSFER',
             'performed_at' => now(),
             'created_at' => now(),
@@ -168,7 +140,7 @@ try {
 
         return response()->json([
             'success' => true,
-            'data' => $response
+            'message' => 'Items transferred successfully',
         ]);
     }
 

@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('inventory_actions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
+            $table->bigInteger('inventory_item_id');
+            $table->enum('action_type', ['Add', 'Remove', 'Adjust', 'Transfer']);
+            $table->integer('quantity')->default(0);
+            $table->string('shopify_location_id_from')->nullable();
+            $table->string('shopify_location_id_to')->nullable();
+            $table->timestamp('performed_at')->useCurrent();
             $table->timestamps();
         });
     }
