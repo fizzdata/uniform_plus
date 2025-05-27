@@ -75,7 +75,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="item in orders" :key="item.id" class="hover:bg-gray-50">
               <td
-                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize"
               >
                 {{ item.supplier_name }}
               </td>
@@ -84,7 +84,9 @@
               >
                 #{{ item.shopify_product_id }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
+              >
                 {{ getItemName(item.shopify_product_id) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -96,7 +98,7 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
                   :class="[
-                    'px-2 py-1 rounded-full text-xs font-medium',
+                    'px-2 py-1 rounded-full text-xs font-medium capitalize',
                     statusBadgeClass(item.status),
                   ]"
                 >
@@ -328,14 +330,13 @@ const fetchItems = async () => {
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
 
     items.value =
-      response?.data?.data?.flatMap(product =>
-        product.variants.map(variant => ({
+      response?.data?.data?.flatMap((product) =>
+        product.variants.map((variant) => ({
           label: `${product.title}`,
           value: variant.id,
           inventory_item_id: variant.inventory_item_id,
         }))
       ) || [];
-
   } catch (error) {
     console.error("Error fetching items:", error);
     errorItemMessage.value = "Failed to load items. Please try again.";
@@ -348,7 +349,9 @@ const getItemName = (shopifyItemId) => {
   if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
 
   // Find the matching product where its ID equals shopifyItemId
-  const matchingItem = items.value.find(item => Number(item.value) === Number(shopifyItemId));
+  const matchingItem = items.value.find(
+    (item) => Number(item.value) === Number(shopifyItemId)
+  );
 
   return matchingItem ? matchingItem.label : "N/a";
 };
@@ -367,14 +370,19 @@ const createPurchaseOrder = async () => {
       return;
     }
 
-const selectedVariant = items.value.find(item => item.value === newOrder.value.itemId);
+    const selectedVariant = items.value.find(
+      (item) => item.value === newOrder.value.itemId
+    );
 
     const payload = {
       supplier: newOrder.value.supplier,
       shopify_product_id: newOrder.value.itemId,
       quantity_ordered: Number(newOrder.value.quantity),
       shop: shop,
-      inventory_item_id: selectedVariant ? selectedVariant.inventory_item_id : null,    };
+      inventory_item_id: selectedVariant
+        ? selectedVariant.inventory_item_id
+        : null,
+    };
 
     if (isEdit.value) {
       // TODO: Replace with your actual edit API endpoint
@@ -383,11 +391,15 @@ const selectedVariant = items.value.find(item => item.value === newOrder.value.i
         payload
       );
     } else {
-      const response = await axios.post(`${apiUrl}/api/purchase-order`, payload);
+      const response = await axios.post(
+        `${apiUrl}/api/purchase-order`,
+        payload
+      );
       if (response?.data?.success) {
-        toast(response.data.message || "Order created successfully!", {
+        toast(response?.data?.message || "Order created successfully!", {
           type: "success",
         });
+        await fetchOrders();
       }
     }
 
@@ -554,7 +566,8 @@ const submitReceive = async () => {
       const updatedOrder = orders.value.find(
         (o) => o.id === selectedOrder.value.id
       );
-      updatedOrder.received += receiveQuantity.value;
+
+      updatedOrder.quantity_received += receiveQuantity.value;
       updatedOrder.status = calculateStatus(updatedOrder);
 
       showReceiveModal.value = false;
@@ -567,8 +580,8 @@ const submitReceive = async () => {
 };
 
 const calculateStatus = (order) => {
-  if (order.received >= order.ordered) return "Completed";
-  if (order.received > 0) return "Partial";
+  if (order.quantity_received >= order.quantity_ordered) return "Completed";
+  if (order.quantity_received > 0) return "Partial";
   return "Pending";
 };
 
