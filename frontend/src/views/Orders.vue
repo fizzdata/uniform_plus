@@ -217,6 +217,9 @@ onMounted(() => {
 const openOrderWindow = (url) => {
     window.open(url, "_blank", "width=1050,height=600,resizable=yes,scrollbars=yes");
 };
+onMounted(() => {
+  fetchOrders();
+});
 
 
 </script>

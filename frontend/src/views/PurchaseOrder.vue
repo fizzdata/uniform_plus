@@ -328,10 +328,14 @@ const fetchItems = async () => {
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
 
     items.value =
-      response?.data?.data?.map((item) => ({
-        label: item.title,
-        value: item.id,
-      })) || [];
+      response?.data?.data?.flatMap(product =>
+        product.variants.map(variant => ({
+          label: `${product.title}`,
+          value: variant.id,
+          inventory_item_id: variant.inventory_item_id,
+        }))
+      ) || [];
+
   } catch (error) {
     console.error("Error fetching items:", error);
     errorItemMessage.value = "Failed to load items. Please try again.";
@@ -340,11 +344,14 @@ const fetchItems = async () => {
   }
 };
 
-const getItemName = (data) => {
-  const filterItem = items.value.find((item) => item.value === data);
-  return filterItem ? filterItem.label : "N/a";
-};
+const getItemName = (shopifyItemId) => {
+  if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
 
+  // Find the matching product where its ID equals shopifyItemId
+  const matchingItem = items.value.find(item => Number(item.value) === Number(shopifyItemId));
+
+  return matchingItem ? matchingItem.label : "N/a";
+};
 const createPurchaseOrder = async () => {
   try {
     isSubmitting.value = true;
@@ -360,12 +367,14 @@ const createPurchaseOrder = async () => {
       return;
     }
 
+const selectedVariant = items.value.find(item => item.value === newOrder.value.itemId);
+
     const payload = {
       supplier: newOrder.value.supplier,
       shopify_product_id: newOrder.value.itemId,
       quantity_ordered: Number(newOrder.value.quantity),
       shop: shop,
-    };
+      inventory_item_id: selectedVariant ? selectedVariant.inventory_item_id : null,    };
 
     if (isEdit.value) {
       // TODO: Replace with your actual edit API endpoint
