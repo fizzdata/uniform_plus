@@ -508,6 +508,7 @@ const createPurchaseOrder = async () => {
           type: "success",
         });
         await fetchOrders();
+        variants.value = [];
       }
     }
 
