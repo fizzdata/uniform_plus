@@ -74,7 +74,7 @@ public function update(Request $request)
     }
 
     DB::table('purchase_orders')
-        ->where('id', $$request->order_id)
+        ->where('id', $request->order_id)
         ->update([
             'quantity_ordered' => $request->quantity_ordered,
             'supplier_name' => $request->supplier,
@@ -133,4 +133,20 @@ private function calculateStatus($orderId, $receivedQuantity)
 
     return ($order->quantity_received + $receivedQuantity) > 0 ? 'partial' : 'pending';
 }
+
+public function delete(Request $request)
+{
+    $validate = Validator::make($request->all(), [
+        'order_id' => 'required|integer|exists:purchase_orders,id',
+    ]);
+
+    if ($validate->fails()) {
+        return response()->json(['error' => $validate->errors()], 422);
+    }
+
+    DB::table('purchase_orders')->where('id', $request->order_id)->delete();
+
+    return response()->json(['success' => true, 'message' => 'Purchase Order deleted successfully']);
+}
+
 }

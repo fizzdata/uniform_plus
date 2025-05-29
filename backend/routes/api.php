@@ -32,6 +32,7 @@ Route::get('/purchase-orders', [PurchaseOrdersController::class, 'index'])->name
 Route::post('/purchase-order', [PurchaseOrdersController::class, 'store'])->name('purchase_orders.store');
 Route::post('/purchase-orders/{order_id}/update', [PurchaseOrdersController::class, 'update'])->name('purchase_orders.update');
 Route::post('/purchase-orders/{order_id}/receive', [PurchaseOrdersController::class, 'receive'])->name('purchase_orders.receive');
+Route::delete('/purchase-orders/{order_id}', [PurchaseOrdersController::class, 'delete'])->name('purchase_orders.delete');
 
 
 Route::get('/inventory/locations', [InventoryController::class, 'get_locations'])->name('inventory.locations');
