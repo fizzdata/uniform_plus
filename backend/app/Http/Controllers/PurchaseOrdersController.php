@@ -131,7 +131,7 @@ public function receive(Request $request)
         ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
             'location_id' => $request->location_id,          // From step 1
             'inventory_item_id' => $order->inventory_item_id,   
-            'available_adjustment' => + $order->quantity
+            'available_adjustment' => + $request->quantity
         ]);
 
             // Abort if inventory update fails
