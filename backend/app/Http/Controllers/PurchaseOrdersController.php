@@ -101,6 +101,18 @@ public function receive(Request $request)
 
     DB::transaction(function () use ($request) {
         // Update purchase order
+
+       $order = DB::table('purchase_orders')->where('id', $request->order_id)->first();
+
+       if($order->quantity_received < 1):
+            $connect = Http::withHeaders([
+                        'X-Shopify-Access-Token' => $request->shop['access_token'],
+                    ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/connect.json", [
+                        'location_id' => $request->location_id,          // From step 1
+                        'inventory_item_id' => $order->inventory_item_id,   
+                    ]);    
+        endif;
+
         DB::table('purchase_orders')
             ->where('id', $request->order_id)
             ->update([
@@ -108,9 +120,6 @@ public function receive(Request $request)
                 'status' => $this->calculateStatus($request->order_id, $request->quantity),
                 'received_at' => now()
             ]);
-
-        // Update Shopify inventory
-        $order = DB::table('purchase_orders')->find($request->order_id);
         
             
         $adjustmentResponse = Http::withHeaders([
@@ -118,7 +127,7 @@ public function receive(Request $request)
         ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
             'location_id' => $request->location_id,          // From step 1
             'inventory_item_id' => $order->inventory_item_id,   
-            'available_adjustment' => $order->quantity_received
+            'available_adjustment' => + $order->quantity
         ]);
     });
 
