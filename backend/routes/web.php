@@ -10,14 +10,10 @@ Route::get('/', function () {
     return response()->json(['success' => true]);
 });
 
-Route::get('/test', [TestController::class, 'index']);
+Route::get('/test1', [TestController::class, 'index']);
 
 Route::get('/auth/shopify', [ShopifyAuthController::class, 'redirectToShopify'])->name('shopify.auth');
 Route::get('/auth/callback', [ShopifyAuthController::class, 'handleCallback']);
-
-Route::get('/test', function () {
-    return DB::table('orders')->get();
-});
 
 Route::post('/shopify/webhooks/inventory-updated', [ShopifyWebhookController::class, 'handleInventoryUpdate']);
 Route::post('/shopify/webhooks/order-created', [ShopifyWebhookController::class, 'handleOrderCreated']);
