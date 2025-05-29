@@ -96,7 +96,16 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
               >
-                {{ selectedItem(item.inventory_item_id)?.label || "N/a" }}
+                {{
+                  selectedItem(item.inventory_item_id)
+                    ? (selectedItem(item.inventory_item_id).label || "") +
+                      (selectedItem(item.inventory_item_id).variant_name
+                        ? " (" +
+                          selectedItem(item.inventory_item_id).variant_name +
+                          ")"
+                        : "")
+                    : "N/A"
+                }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ item.quantity_ordered }}
@@ -357,7 +366,7 @@
           type="button"
           @click="confirmDelete"
           :disabled="isSubmitting"
-          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 cursor-pointer"
         >
           Delete Order
         </button>
@@ -437,6 +446,7 @@ const fetchItems = async () => {
           value: variant.id,
           inventory_item_id: variant.inventory_item_id,
           barcode: variant.barcode,
+          variant_name: variant.title,
         }))
       ) || [];
   } catch (error) {
@@ -487,7 +497,7 @@ const createPurchaseOrder = async () => {
       );
 
       if (response?.data?.success) {
-        toast(response?.data?.message || "Order updated successfully!", {
+        toast(response?.data?.message || "Order updated successfully.", {
           type: "success",
         });
         await fetchOrders();
@@ -505,7 +515,7 @@ const createPurchaseOrder = async () => {
         payload
       );
       if (response?.data?.success) {
-        toast(response?.data?.message || "Order created successfully!", {
+        toast(response?.data?.message || "Order created successfully.", {
           type: "success",
         });
         await fetchOrders();
@@ -529,12 +539,18 @@ const createPurchaseOrder = async () => {
 const confirmDelete = async () => {
   try {
     isSubmitting.value = true;
-
     const response = await axios.delete(
-      `${apiUrl}/api/purchase-orders/${selectRecord.value.id}`
+      `${apiUrl}/api/purchase-orders/${selectRecord.value.id}`,
+      {
+        params: {
+          order_id: selectRecord.value.id,
+          shop: shop,
+        },
+      }
     );
+
     if (response?.data?.success) {
-      toast(response?.data?.message || "Order deleted successfully!", {
+      toast(response?.data?.message || "Purchase Order deleted successfully.", {
         type: "success",
       });
       await fetchOrders();
@@ -708,7 +724,7 @@ const submitReceive = async () => {
     if (response.data.success) {
       isSubmitting.value = false;
 
-      toast(response.data.message || "Order received successfully!", {
+      toast(response.data.message || "Order received successfully.", {
         type: "success",
       });
       // Update local state
