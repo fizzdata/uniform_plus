@@ -110,7 +110,11 @@ public function receive(Request $request)
                     ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/connect.json", [
                         'location_id' => $request->location_id,          // From step 1
                         'inventory_item_id' => $order->inventory_item_id,   
-                    ]);    
+                    ]); 
+                    // Abort if connection fails
+        if ($connect->failed()) {
+            throw new \Exception("Failed to connect inventory item to location.");
+        }   
         endif;
 
         DB::table('purchase_orders')
@@ -129,6 +133,11 @@ public function receive(Request $request)
             'inventory_item_id' => $order->inventory_item_id,   
             'available_adjustment' => + $order->quantity
         ]);
+
+            // Abort if inventory update fails
+    if ($adjustmentResponse->failed()) {
+        throw new \Exception("Failed to update Shopify inventory.");
+    }
     });
 
     return response()->json(['success' => true, 'message' => 'Order received successfully']);
