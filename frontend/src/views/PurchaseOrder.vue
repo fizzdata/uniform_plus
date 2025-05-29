@@ -406,6 +406,7 @@ const newOrder = ref({
   itemId: "",
   quantity: 1,
   inventory_item_id: "",
+  paid: false,
 });
 
 const fetchItemVariants = (data) => {

@@ -38,6 +38,7 @@ public function store(Request $request)
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
         'inventory_item_id' => 'required|integer',
+        'paid' => 'boolean',
 
     ]);
 
@@ -52,6 +53,7 @@ public function store(Request $request)
         'quantity_ordered' => $request->quantity_ordered,
         'supplier_name' => $request->supplier,
         'inventory_item_id' => $request->inventory_item_id,
+        'paid' => $request->paid ?? false,
         'status' => 'pending',
         'created_at' => now(),
         'updated_at' => now(),
