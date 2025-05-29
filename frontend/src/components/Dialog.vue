@@ -75,6 +75,7 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  close: Function,
 });
 
 const emit = defineEmits(["update:modelValue", "confirm", "close"]);
@@ -85,6 +86,10 @@ const onClose = () => {
   isOpen.value = false;
   emit("update:modelValue", false);
   emit("close");
+
+  if (props.close) {
+    props.close(); // ✅ call external close handler
+  }
 };
 
 const onConfirm = () => {

@@ -21,8 +21,8 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-8">
-      <p>Loading orders...</p>
+    <div v-if="loading" class="h-full flex items-center justify-center pt-10">
+      <BaseSpinner :show-loader="loading" size="md" />
     </div>
 
     <!-- Orders Table -->
@@ -41,7 +41,7 @@
                 scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                item ID
+                Barcode
               </th>
               <th
                 scope="col"
@@ -67,6 +67,12 @@
               >
                 Status
               </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Paid
+              </th>
               <th scope="col" class="relative px-6 py-3">
                 <span class="sr-only">Actions</span>
               </th>
@@ -82,12 +88,15 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
               >
-                #{{ item.shopify_product_id }}
+                <span v-if="selectedItem(item.inventory_item_id)?.barcode">
+                  #{{ selectedItem(item.inventory_item_id)?.barcode }}
+                </span>
+                <span v-else>N/a</span>
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
               >
-                {{ getItemName(item.shopify_product_id) }}
+                {{ selectedItem(item.inventory_item_id)?.label || "N/a" }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ item.quantity_ordered }}
@@ -105,20 +114,32 @@
                   {{ item.status }}
                 </span>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.paid ? "Yes" : "No" }}
+              </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
                 <button
+                  v-tooltip="'Add Recieve'"
+                  @click="openReceiveModal(item)"
+                  class="text-gray-600 hover:text-gray-900 cursor-pointer"
+                >
+                  <IconPlusCircle class="text-blue-600" />
+                </button>
+                <button
+                  v-tooltip="'Edit'"
                   @click="openCreateProductModal(item)"
                   class="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
                   <IconPensilSquare class="text-green-600" />
                 </button>
                 <button
-                  @click="openReceiveModal(item)"
+                  v-tooltip="'Delete'"
+                  @click="openDeleteProductModal(item)"
                   class="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
-                  Add Received
+                  <IconDelete class="text-red-600" />
                 </button>
               </td>
             </tr>
@@ -136,14 +157,14 @@
       </div>
       <div class="flex space-x-2">
         <button
-          class="px-3 py-1 border rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          class="px-3 py-1 border rounded-md text-gray-700 bg-white hover:bg-gray-50 cursor-pointer disabled:pointer-events-none"
           :disabled="!hasPreviousPage"
           @click="fetchOrders(currentPage - 1)"
         >
           Previous
         </button>
         <button
-          class="px-3 py-1 border rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          class="px-3 py-1 border rounded-md text-gray-700 bg-white hover:bg-gray-50 cursor-pointer disabled:pointer-events-none"
           :disabled="!hasNextPage"
           @click="fetchOrders(currentPage + 1)"
         >
@@ -213,6 +234,7 @@
     <AppDialog
       v-model="showCreateOrderModal"
       :title="isEdit ? 'Edit Order' : 'Create New Order'"
+      :close="() => (variants = [])"
     >
       <div class="space-y-4">
         <!-- Supplier Name -->
@@ -229,12 +251,13 @@
         </div>
 
         <!-- Item Selection -->
-        <div>
+        <div v-if="!isEdit">
           <label class="block text-sm font-medium text-gray-700">Item</label>
           <select
             v-model="newOrder.itemId"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="loadingItems"
+            :disabled="loadingItems || isEdit"
+            @change="fetchItemVariants"
           >
             <option value="">Select an item</option>
             <option v-for="item in items" :key="item.id" :value="item.value">
@@ -244,6 +267,27 @@
           <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
             Loading items...
           </p>
+        </div>
+
+        <!-- Variant Selection -->
+        <div v-if="!isEdit">
+          <label class="block text-sm font-medium text-gray-700">
+            Select Variant
+          </label>
+          <select
+            v-model="newOrder.inventory_item_id"
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+            :disabled="variants.length === 0 || isEdit"
+          >
+            <option value="">Select a variant</option>
+            <option
+              v-for="variant in variants"
+              :key="variant.inventory_item_id"
+              :value="variant.inventory_item_id"
+            >
+              {{ variant.title }}
+            </option>
+          </select>
         </div>
 
         <!-- Quantity -->
@@ -281,18 +325,55 @@
           :disabled="isSubmitting"
           class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
         >
-          {{ isSubmitting ? "Creating..." : isEdit ? "Edit" : "Create Order" }}
+          {{
+            isSubmitting
+              ? isEdit
+                ? "Editing..."
+                : "Creating..."
+              : isEdit
+              ? "Edit"
+              : "Create Order"
+          }}
+        </button>
+      </template>
+    </AppDialog>
+
+    <!-- Confirm Delete Modal -->
+    <AppDialog v-model="showDeleteModal" :title="'Confirm Delete'">
+      <div class="space-y-4">
+        <p>Are you sure you want to delete this order?</p>
+      </div>
+
+      <!-- Actions -->
+      <template #actions="{ close }">
+        <button
+          type="button"
+          @click="close"
+          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          @click="confirmDelete"
+          :disabled="isSubmitting"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+        >
+          Delete Order
         </button>
       </template>
     </AppDialog>
   </div>
 </template>
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import axios from "axios";
 import AppDialog from "@/components/Dialog.vue";
 import IconPensilSquare from "@/components/icons/IconPensilSquare.vue";
 import { toast } from "vue3-toastify";
+import IconDelete from "@/components/icons/IconDelete.vue";
+import IconPlusCircle from "@/components/icons/IconPlusCircle.vue";
+import BaseSpinner from "@/components/BaseSpinner.vue";
 
 // Reactive state
 const orders = ref([]);
@@ -315,13 +396,26 @@ const selectedLocation = ref("");
 const isEdit = ref(false);
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const shop = localStorage.getItem("shop_name") || "";
-
+const variants = ref([]);
+const allProductsItems = ref([]);
+const showDeleteModal = ref(false);
+const selectRecord = ref("");
 // New order form
 const newOrder = ref({
   supplier: "",
   itemId: "",
   quantity: 1,
+  inventory_item_id: "",
 });
+
+const fetchItemVariants = (data) => {
+  const matchingItem = items.value.find(
+    (item) => Number(item.value) === Number(data.target.value)
+  );
+  if (matchingItem?.variants) {
+    variants.value = matchingItem.variants;
+  }
+};
 
 //Fetch items from API
 const fetchItems = async () => {
@@ -330,11 +424,18 @@ const fetchItems = async () => {
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
 
     items.value =
+      response?.data?.data?.map((variant) => ({
+        label: `${variant.title}`,
+        value: variant.id,
+        variants: variant.variants,
+      })) || [];
+    allProductsItems.value =
       response?.data?.data?.flatMap((product) =>
         product.variants.map((variant) => ({
           label: `${product.title}`,
           value: variant.id,
           inventory_item_id: variant.inventory_item_id,
+          barcode: variant.barcode,
         }))
       ) || [];
   } catch (error) {
@@ -345,15 +446,15 @@ const fetchItems = async () => {
   }
 };
 
-const getItemName = (shopifyItemId) => {
+const selectedItem = (shopifyItemId) => {
   if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
 
   // Find the matching product where its ID equals shopifyItemId
-  const matchingItem = items.value.find(
-    (item) => Number(item.value) === Number(shopifyItemId)
+  const matchingItem = allProductsItems.value.find(
+    (item) => Number(item.inventory_item_id) === Number(shopifyItemId)
   );
 
-  return matchingItem ? matchingItem.label : "N/a";
+  return matchingItem || "N/a";
 };
 const createPurchaseOrder = async () => {
   try {
@@ -364,33 +465,40 @@ const createPurchaseOrder = async () => {
     if (
       !newOrder.value.supplier ||
       !newOrder.value.itemId ||
+      !newOrder.value.inventory_item_id ||
       !newOrder.value.quantity
     ) {
       errorItemMessage.value = "Please fill in all fields";
       return;
     }
 
-    const selectedVariant = items.value.find(
-      (item) => item.value === newOrder.value.itemId
-    );
-
-    const payload = {
-      supplier: newOrder.value.supplier,
-      shopify_product_id: newOrder.value.itemId,
-      quantity_ordered: Number(newOrder.value.quantity),
-      shop: shop,
-      inventory_item_id: selectedVariant
-        ? selectedVariant.inventory_item_id
-        : null,
-    };
-
     if (isEdit.value) {
+      const payload = {
+        supplier: newOrder.value.supplier,
+        quantity_ordered: Number(newOrder.value.quantity),
+        shop: shop,
+      };
+
       // TODO: Replace with your actual edit API endpoint
-      const response = await axios.put(
-        `${apiUrl}/purchase-order/${newOrder.value.id}`,
+      const response = await axios.post(
+        `${apiUrl}/api/purchase-orders/${selectRecord.value.id}/update`,
         payload
       );
+
+      if (response?.data?.success) {
+        toast(response?.data?.message || "Order updated successfully!", {
+          type: "success",
+        });
+        await fetchOrders();
+      }
     } else {
+      const payload = {
+        supplier: newOrder.value.supplier,
+        shopify_product_id: newOrder.value.itemId,
+        quantity_ordered: Number(newOrder.value.quantity),
+        shop: shop,
+        inventory_item_id: Number(newOrder.value.inventory_item_id),
+      };
       const response = await axios.post(
         `${apiUrl}/api/purchase-order`,
         payload
@@ -400,16 +508,38 @@ const createPurchaseOrder = async () => {
           type: "success",
         });
         await fetchOrders();
+        variants.value = [];
       }
     }
-
-    // Optionally refresh list or add new item to list
-    // orders.value.unshift(response.data);
-    // await fetchOrders();
 
     // Reset form and close modal
     resetForm();
     showCreateOrderModal.value = false;
+  } catch (error) {
+    console.error("Error creating purchase order:", error);
+    errorItemMessage.value =
+      error.response?.data?.message ||
+      "Failed to create order. Please try again.";
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const confirmDelete = async () => {
+  try {
+    isSubmitting.value = true;
+
+    const response = await axios.delete(
+      `${apiUrl}/api/purchase-orders/${selectRecord.value.id}`
+    );
+    if (response?.data?.success) {
+      toast(response?.data?.message || "Order deleted successfully!", {
+        type: "success",
+      });
+      await fetchOrders();
+    }
+    isSubmitting.value = false;
+    showDeleteModal.value = false;
   } catch (error) {
     console.error("Error creating purchase order:", error);
     errorItemMessage.value =
@@ -426,6 +556,7 @@ const resetForm = () => {
     supplier: "",
     itemId: "",
     quantity: 1,
+    inventory_item_id: "",
   };
   errorMessage.value = "";
 };
@@ -456,6 +587,8 @@ const statusBadgeClass = computed(() => {
         return "bg-green-100 text-green-800";
       case "partial":
         return "bg-yellow-100 text-yellow-800";
+      case "received":
+        return "bg-green-100 text-green-800";
       default: // pending
         return "bg-red-100 text-red-800";
     }
@@ -517,10 +650,24 @@ const fetchOrders = async (page = 1) => {
   }
 };
 
+const openDeleteProductModal = (order) => {
+  selectRecord.value = order;
+  showDeleteModal.value = true;
+};
 const openCreateProductModal = (order) => {
   if (!order) return;
 
+  selectRecord.value = order;
+
   isEdit.value = true;
+
+  const matchingItem = items.value.find(
+    (item) => Number(item.value) === Number(order.shopify_product_id)
+  );
+
+  if (matchingItem?.variants) {
+    variants.value = matchingItem.variants;
+  }
 
   // Create a new object with the updated values
   newOrder.value = {
@@ -528,6 +675,7 @@ const openCreateProductModal = (order) => {
     supplier: order.supplier_name || "",
     itemId: order.shopify_product_id || "",
     quantity: order.quantity_ordered || 0,
+    inventory_item_id: order.inventory_item_id,
   };
 
   showCreateOrderModal.value = true;
@@ -569,7 +717,7 @@ const submitReceive = async () => {
 
       updatedOrder.quantity_received += receiveQuantity.value;
       updatedOrder.status = calculateStatus(updatedOrder);
-
+      variants.value = [];
       showReceiveModal.value = false;
     }
   } catch (error) {
@@ -580,10 +728,17 @@ const submitReceive = async () => {
 };
 
 const calculateStatus = (order) => {
-  if (order.quantity_received >= order.quantity_ordered) return "Completed";
+  if (order.quantity_received >= order.quantity_ordered) return "received";
   if (order.quantity_received > 0) return "Partial";
   return "Pending";
 };
+
+// Watch for changes to reload orders
+watch([() => showReceiveModal, () => showCreateOrderModal], () => {
+  if (!showReceiveModal.value && !showCreateOrderModal.value) {
+    fetchOrders();
+  }
+});
 
 // Lifecycle hooks
 onMounted(() => {
