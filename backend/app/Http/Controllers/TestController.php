@@ -6,37 +6,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
+use App\Models\Shopify;
 
 
 class TestController extends Controller
 {
     public function index(Request $request){
         
-        $shop = 'test-shop.myshopify.com';
+            
+    $shop = new Shopify(1); // Assuming shop_id is 1 for testing
+    try {
+            $products = $shop->get_products();
+            $inventory_levels = $shop->get_inventory_levels();
+            $locations = $shop->get_locations();
 
-         $storedShop = DB::table('shops')->where('shop_domain', $shop)->first();
-
-            if (!$storedShop) {
-                return response()->json(['success' => false, 'error' => 'Shop not found']);
-            }
-
-            // Convert to an array before merging
-            $request->merge(['shop' => (array) $storedShop]);
-
-
-            try {
-
-
-                //test here
-
-
-
-
-                //end here
-       
-    } catch (\Exception $e) {
-        dd(['error' => $e->getMessage()]);
-    }
+            return response()->json([
+                'products' => $products,
+                'inventory_levels' => $inventory_levels,
+                'locations' => $locations
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
 
     }
 }
