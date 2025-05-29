@@ -313,6 +313,24 @@
           />
         </div>
 
+        <!-- Paid or unpaid toggle -->
+        <div v-if="isEdit">
+          <label class="block text-sm font-medium text-gray-700">Paid </label>
+          <div class="mt-1 relative flex items-center">
+            <Switch
+              v-model="newOrder.paid"
+              :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
+              class="relative inline-flex h-6 w-11 items-center rounded-full"
+            >
+              <span class="sr-only">Toggle paid status</span>
+              <span
+                :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+              />
+            </Switch>
+          </div>
+        </div>
+
         <!-- Error Message -->
         <div v-if="errorItemMessage" class="text-red-500 text-sm">
           {{ errorItemMessage }}
@@ -383,6 +401,7 @@ import { toast } from "vue3-toastify";
 import IconDelete from "@/components/icons/IconDelete.vue";
 import IconPlusCircle from "@/components/icons/IconPlusCircle.vue";
 import BaseSpinner from "@/components/BaseSpinner.vue";
+import { Switch } from "@headlessui/vue";
 
 // Reactive state
 const orders = ref([]);
@@ -487,6 +506,7 @@ const createPurchaseOrder = async () => {
       const payload = {
         supplier: newOrder.value.supplier,
         quantity_ordered: Number(newOrder.value.quantity),
+        paid: newOrder.value.paid, // will be true only if explicitly 'true'
         shop: shop,
       };
 
@@ -693,6 +713,7 @@ const openCreateProductModal = (order) => {
     itemId: order.shopify_product_id || "",
     quantity: order.quantity_ordered || 0,
     inventory_item_id: order.inventory_item_id,
+    paid: order.paid,
   };
 
   showCreateOrderModal.value = true;
