@@ -96,7 +96,16 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
               >
-                {{ selectedItem(item.inventory_item_id)?.label || "N/a" }}
+                {{
+                  selectedItem(item.inventory_item_id)
+                    ? (selectedItem(item.inventory_item_id).label || "") +
+                      (selectedItem(item.inventory_item_id).variant_name
+                        ? " (" +
+                          selectedItem(item.inventory_item_id).variant_name +
+                          ")"
+                        : "")
+                    : "N/A"
+                }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ item.quantity_ordered }}
@@ -304,6 +313,24 @@
           />
         </div>
 
+        <!-- Paid or unpaid toggle -->
+        <div v-if="isEdit">
+          <label class="block text-sm font-medium text-gray-700">Paid </label>
+          <div class="mt-1 relative flex items-center">
+            <Switch
+              v-model="newOrder.paid"
+              :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
+              class="relative inline-flex h-6 w-11 items-center rounded-full"
+            >
+              <span class="sr-only">Toggle paid status</span>
+              <span
+                :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+              />
+            </Switch>
+          </div>
+        </div>
+
         <!-- Error Message -->
         <div v-if="errorItemMessage" class="text-red-500 text-sm">
           {{ errorItemMessage }}
@@ -357,7 +384,7 @@
           type="button"
           @click="confirmDelete"
           :disabled="isSubmitting"
-          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 cursor-pointer"
         >
           Delete Order
         </button>
@@ -374,6 +401,7 @@ import { toast } from "vue3-toastify";
 import IconDelete from "@/components/icons/IconDelete.vue";
 import IconPlusCircle from "@/components/icons/IconPlusCircle.vue";
 import BaseSpinner from "@/components/BaseSpinner.vue";
+import { Switch } from "@headlessui/vue";
 
 // Reactive state
 const orders = ref([]);
@@ -437,6 +465,7 @@ const fetchItems = async () => {
           value: variant.id,
           inventory_item_id: variant.inventory_item_id,
           barcode: variant.barcode,
+          variant_name: variant.title,
         }))
       ) || [];
   } catch (error) {
@@ -477,6 +506,7 @@ const createPurchaseOrder = async () => {
       const payload = {
         supplier: newOrder.value.supplier,
         quantity_ordered: Number(newOrder.value.quantity),
+        paid: newOrder.value.paid, // will be true only if explicitly 'true'
         shop: shop,
       };
 
@@ -487,7 +517,7 @@ const createPurchaseOrder = async () => {
       );
 
       if (response?.data?.success) {
-        toast(response?.data?.message || "Order updated successfully!", {
+        toast(response?.data?.message || "Order updated successfully.", {
           type: "success",
         });
         await fetchOrders();
@@ -505,7 +535,7 @@ const createPurchaseOrder = async () => {
         payload
       );
       if (response?.data?.success) {
-        toast(response?.data?.message || "Order created successfully!", {
+        toast(response?.data?.message || "Order created successfully.", {
           type: "success",
         });
         await fetchOrders();
@@ -529,12 +559,18 @@ const createPurchaseOrder = async () => {
 const confirmDelete = async () => {
   try {
     isSubmitting.value = true;
-
     const response = await axios.delete(
-      `${apiUrl}/api/purchase-orders/${selectRecord.value.id}`
+      `${apiUrl}/api/purchase-orders/${selectRecord.value.id}`,
+      {
+        params: {
+          order_id: selectRecord.value.id,
+          shop: shop,
+        },
+      }
     );
+
     if (response?.data?.success) {
-      toast(response?.data?.message || "Order deleted successfully!", {
+      toast(response?.data?.message || "Purchase Order deleted successfully.", {
         type: "success",
       });
       await fetchOrders();
@@ -677,6 +713,7 @@ const openCreateProductModal = (order) => {
     itemId: order.shopify_product_id || "",
     quantity: order.quantity_ordered || 0,
     inventory_item_id: order.inventory_item_id,
+    paid: order.paid,
   };
 
   showCreateOrderModal.value = true;
@@ -708,7 +745,7 @@ const submitReceive = async () => {
     if (response.data.success) {
       isSubmitting.value = false;
 
-      toast(response.data.message || "Order received successfully!", {
+      toast(response.data.message || "Order received successfully.", {
         type: "success",
       });
       // Update local state
