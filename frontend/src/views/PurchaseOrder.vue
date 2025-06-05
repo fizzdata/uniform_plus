@@ -37,7 +37,9 @@
           class="bg-gray-100 px-4 py-2 cursor-pointer flex justify-between items-center rounded-2xl"
           @click="toggleGroup(supplier)"
         >
-          <h3 class="font-semibold">Supplier: {{ supplier }}</h3>
+          <h3 class="font-semibold">
+            Product: {{ selectedProduct(supplier)?.label }}
+          </h3>
           <span class="text-gray-500">{{
             expandedGroups[supplier] ? "−" : "+"
           }}</span>
@@ -62,7 +64,11 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 rounded-bl-2xl">
-            <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50">
+            <tr
+              v-for="item in items.items"
+              :key="item.id"
+              class="hover:bg-gray-50"
+            >
               <td class="px-4 py-2">{{ item.id }}</td>
               <td class="px-4 py-2">
                 <span v-if="selectedItem(item.inventory_item_id)?.barcode">
@@ -394,16 +400,31 @@ function toggleGroup(key) {
   expandedGroups.value[key] = !expandedGroups.value[key];
 }
 
-// Group orders by supplier_name
 const groupedOrders = computed(() => {
   const result = {};
+
   for (const order of orders.value) {
-    const key = order.supplier_name || "Unknown Supplier";
-    if (!result[key]) result[key] = [];
-    result[key].push(order);
+    const shopifyId = order.shopify_product_id || "unknown_id";
+    const supplierName = order.supplier_name || "Unknown Supplier";
+
+    const key = `${shopifyId}-${supplierName}`;
+
+    if (!result[shopifyId]) {
+      result[shopifyId] = {
+        shopify_product_id: shopifyId,
+        supplier_name: supplierName,
+        items: [],
+      };
+    }
+
+    result[shopifyId].items.push(order);
   }
+
+  console.log("groupedOrders:", result);
   return result;
 });
+
+console.log("groupedOrders", groupedOrders);
 
 const maxQuantity = computed(
   () =>
@@ -457,6 +478,7 @@ const fetchItems = async () => {
           inventory_item_id: variant.inventory_item_id,
           barcode: variant.barcode,
           variant_name: variant.title,
+          shopify_product_id: product.id,
         }))
       ) || [];
   } catch (error) {
@@ -465,6 +487,20 @@ const fetchItems = async () => {
   } finally {
     loadingItems.value = false;
   }
+};
+
+const selectedProduct = (shopifyItemId) => {
+  if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
+  console.log("allProductsItems.value", allProductsItems.value);
+  console.log("shopifyItemId", shopifyItemId);
+
+  // Find the matching product where its ID equals shopifyItemId
+  const matchingItem = allProductsItems.value.find(
+    (item) => Number(item.shopify_product_id) === Number(shopifyItemId)
+  );
+  console.log("matchingItem", matchingItem);
+
+  return matchingItem || "N/a";
 };
 
 const selectedItem = (shopifyItemId) => {
