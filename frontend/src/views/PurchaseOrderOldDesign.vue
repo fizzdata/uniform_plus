@@ -26,53 +26,94 @@
     </div>
 
     <!-- Orders Table -->
-    <div v-else class="space-y-4">
-      <div
-        v-for="(items, supplier) in groupedOrders"
-        :key="supplier"
-        class="border rounded-lg"
-      >
-        <!-- Group Header -->
-        <div
-          class="bg-gray-100 px-4 py-2 cursor-pointer flex justify-between items-center rounded-2xl"
-          @click="toggleGroup(supplier)"
-        >
-          <h3 class="font-semibold">Supplier: {{ supplier }}</h3>
-          <span class="text-gray-500">{{
-            expandedGroups[supplier] ? "−" : "+"
-          }}</span>
-        </div>
-
-        <!-- Group Body -->
-        <table
-          v-if="expandedGroups[supplier]"
-          class="min-w-full divide-y divide-gray-200 text-sm"
-        >
-          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-2 text-left">Order ID</th>
-              <th class="px-4 py-2 text-left">Barcode</th>
-              <th class="px-4 py-2 text-left">Qty Ordered</th>
-              <th class="px-4 py-2 text-left">Qty Received</th>
-              <th class="px-4 py-2 text-left">Status</th>
-              <th class="px-4 py-2 text-left">Paid</th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Suplier
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Barcode
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                item Name
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Qty Ordered
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Qty Received
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Paid
+              </th>
               <th scope="col" class="relative px-6 py-3">
                 <span class="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 rounded-bl-2xl">
-            <tr v-for="item in items" :key="item.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2">{{ item.id }}</td>
-              <td class="px-4 py-2">
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="item in orders" :key="item.id" class="hover:bg-gray-50">
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize"
+              >
+                {{ item.supplier_name }}
+              </td>
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+              >
                 <span v-if="selectedItem(item.inventory_item_id)?.barcode">
                   #{{ selectedItem(item.inventory_item_id)?.barcode }}
                 </span>
                 <span v-else>N/a</span>
               </td>
-              <td class="px-4 py-2">{{ item.quantity_ordered }}</td>
-              <td class="px-4 py-2">{{ item.quantity_received }}</td>
-              <td class="px-4 py-2 capitalize">
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
+              >
+                {{
+                  selectedItem(item.inventory_item_id)
+                    ? (selectedItem(item.inventory_item_id).label || "") +
+                      (selectedItem(item.inventory_item_id).variant_name
+                        ? " (" +
+                          selectedItem(item.inventory_item_id).variant_name +
+                          ")"
+                        : "")
+                    : "N/A"
+                }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_ordered }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_received }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
                 <span
                   :class="[
                     'px-2 py-1 rounded-full text-xs font-medium capitalize',
@@ -82,7 +123,9 @@
                   {{ item.status }}
                 </span>
               </td>
-              <td class="px-4 py-2">{{ item.paid ? "Yes" : "No" }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ item.paid ? "Yes" : "No" }}
+              </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
@@ -152,7 +195,6 @@
             selectedOrder.quantity_ordered - selectedOrder.quantity_received
           "
           min="1"
-          @input="validateQuantity"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
         />
         <p class="mt-2 text-sm text-gray-500">
@@ -386,39 +428,6 @@ const variants = ref([]);
 const allProductsItems = ref([]);
 const showDeleteModal = ref(false);
 const selectRecord = ref("");
-
-// Handle group expand/collapse state
-const expandedGroups = ref({});
-
-function toggleGroup(key) {
-  expandedGroups.value[key] = !expandedGroups.value[key];
-}
-
-// Group orders by supplier_name
-const groupedOrders = computed(() => {
-  const result = {};
-  for (const order of orders.value) {
-    const key = order.supplier_name || "Unknown Supplier";
-    if (!result[key]) result[key] = [];
-    result[key].push(order);
-  }
-  return result;
-});
-
-const maxQuantity = computed(
-  () =>
-    selectedOrder.value.quantity_ordered - selectedOrder.value.quantity_received
-);
-
-const validateQuantity = () => {
-  if (receiveQuantity.value > maxQuantity.value) {
-    receiveQuantity.value = maxQuantity.value;
-  }
-  if (receiveQuantity.value < 1) {
-    receiveQuantity.value = 1;
-  }
-};
-
 // New order form
 const newOrder = ref({
   supplier: "",
@@ -711,7 +720,6 @@ const openCreateProductModal = (order) => {
 };
 
 const openReceiveModal = async (order) => {
-  console.log("🚀 ~ openReceiveModal ~ order:", order);
   selectedOrder.value = order;
   receiveQuantity.value = order.quantity_ordered - order.quantity_received;
   showReceiveModal.value = true;
