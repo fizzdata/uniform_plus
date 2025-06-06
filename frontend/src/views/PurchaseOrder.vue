@@ -37,7 +37,7 @@
           class="bg-gray-100 px-4 py-2 cursor-pointer flex justify-between items-center rounded-2xl"
           @click="toggleGroup(supplier)"
         >
-          <h3 class="font-semibold">
+          <h3 class="font-semibold capitalize">
             Product: {{ selectedProduct(supplier)?.label }}
           </h3>
           <span class="text-gray-500">{{
@@ -53,6 +53,7 @@
           <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
               <th class="px-4 py-2 text-left">Order ID</th>
+              <th class="px-4 py-2 text-left">Supplier</th>
               <th class="px-4 py-2 text-left">Barcode</th>
               <th class="px-4 py-2 text-left">Qty Ordered</th>
               <th class="px-4 py-2 text-left">Qty Received</th>
@@ -70,6 +71,7 @@
               class="hover:bg-gray-50"
             >
               <td class="px-4 py-2">{{ item.id }}</td>
+              <td class="px-4 py-2">{{ item.supplier_name }}</td>
               <td class="px-4 py-2">
                 <span v-if="selectedItem(item.inventory_item_id)?.barcode">
                   #{{ selectedItem(item.inventory_item_id)?.barcode }}
@@ -157,8 +159,6 @@
           :max="
             selectedOrder.quantity_ordered - selectedOrder.quantity_received
           "
-          min="1"
-          @input="validateQuantity"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
         />
         <p class="mt-2 text-sm text-gray-500">
@@ -407,8 +407,6 @@ const groupedOrders = computed(() => {
     const shopifyId = order.shopify_product_id || "unknown_id";
     const supplierName = order.supplier_name || "Unknown Supplier";
 
-    const key = `${shopifyId}-${supplierName}`;
-
     if (!result[shopifyId]) {
       result[shopifyId] = {
         shopify_product_id: shopifyId,
@@ -420,25 +418,10 @@ const groupedOrders = computed(() => {
     result[shopifyId].items.push(order);
   }
 
-  console.log("groupedOrders:", result);
   return result;
 });
 
 console.log("groupedOrders", groupedOrders);
-
-const maxQuantity = computed(
-  () =>
-    selectedOrder.value.quantity_ordered - selectedOrder.value.quantity_received
-);
-
-const validateQuantity = () => {
-  if (receiveQuantity.value > maxQuantity.value) {
-    receiveQuantity.value = maxQuantity.value;
-  }
-  if (receiveQuantity.value < 1) {
-    receiveQuantity.value = 1;
-  }
-};
 
 // New order form
 const newOrder = ref({
@@ -491,14 +474,11 @@ const fetchItems = async () => {
 
 const selectedProduct = (shopifyItemId) => {
   if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
-  console.log("allProductsItems.value", allProductsItems.value);
-  console.log("shopifyItemId", shopifyItemId);
 
   // Find the matching product where its ID equals shopifyItemId
   const matchingItem = allProductsItems.value.find(
     (item) => Number(item.shopify_product_id) === Number(shopifyItemId)
   );
-  console.log("matchingItem", matchingItem);
 
   return matchingItem || "N/a";
 };
@@ -747,7 +727,6 @@ const openCreateProductModal = (order) => {
 };
 
 const openReceiveModal = async (order) => {
-  console.log("🚀 ~ openReceiveModal ~ order:", order);
   selectedOrder.value = order;
   receiveQuantity.value = order.quantity_ordered - order.quantity_received;
   showReceiveModal.value = true;
