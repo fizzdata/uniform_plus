@@ -35,11 +35,12 @@ public function store(Request $request)
 
     $validate = Validator::make($request->all(), [
         'shopify_product_id' => 'required|integer',
-        'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
-        'inventory_item_id' => 'required|integer',
         'paid' => 'boolean',
 
+        'items' => 'required|array',
+        'items.*.inventory_item_id' => 'required|integer',
+        'items.*.quantity_ordered' => 'required|integer|min:1',
     ]);
 
     if ($validate->fails()) {
@@ -47,19 +48,21 @@ public function store(Request $request)
     }
 
 
-    $orderId = DB::table('purchase_orders')->insertGetId([
+   foreach ($request->items as $item):
+    $orderId = DB::table('purchase_orders')->insert([
         'shop_id' => $request->shop['id'],
         'shopify_product_id' => $request->shopify_product_id,
-        'quantity_ordered' => $request->quantity_ordered,
+        'quantity_ordered' => $item['quantity_ordered'],
         'supplier_name' => $request->supplier,
-        'inventory_item_id' => $request->inventory_item_id,
+        'inventory_item_id' => $item['inventory_item_id'],
         'paid' => $request->paid ?? false,
         'status' => 'pending',
         'created_at' => now(),
         'updated_at' => now(),
     ]);
+    endforeach;
 
-    return response()->json(['success' => true, 'order_id' => $orderId]);
+    return response()->json(['success' => true, 'message' => 'Product ' . $request->shopify_product_id . ' order Created ' . count($request->items) . ' items added to order']);
 
 
 }
@@ -67,6 +70,8 @@ public function store(Request $request)
 public function update(Request $request)
 {
     $validate = Validator::make($request->all(), [
+
+        
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
     ]);
@@ -92,17 +97,36 @@ public function receive(Request $request)
 {
 
     $validate = Validator::make($request->all(), [
-        'quantity' => 'required|integer|min:1',
+        'items' => 'required|array',
+        'items.*.quantity' => 'required|integer|min:1',
+        'items.*.inventory_item_id' => 'required|integer',
         'location_id' => 'required|integer',
     ]);
     if ($validate->fails()) {
         return response()->json(['error' => $validate->errors()], 422);
     }
 
-    DB::transaction(function () use ($request) {
-        // Update purchase order
 
-       $order = DB::table('purchase_orders')->where('id', $request->order_id)->first();
+    foreach ($request->items as $item):
+          
+
+       $order = DB::table('purchase_orders')->where('inventory_item_id', $item['inventory_item_id'])->first();
+
+       if (!$order) {
+            return response()->json(['error' => 'Order not found for inventory item ID: ' . $item['inventory_item_id']], 404);
+        }
+
+        // Check if the order is already fully received
+        if ($order->status === 'received') {
+            return response()->json(['error' => 'Order already fully received.'], 422);
+        }
+
+        // Ensure the quantity to receive does not exceed what was ordered
+        if ($item['quantity'] > ($order->quantity_ordered - $order->quantity_received)) {
+            return response()->json(['error' => 'Cannot receive more than ordered.'], 422);
+        }
+
+         // Connect inventory item to location if not already connected
 
        if($order->quantity_received < 1):
             $connect = Http::withHeaders([
@@ -118,10 +142,11 @@ public function receive(Request $request)
         endif;
 
         DB::table('purchase_orders')
-            ->where('id', $request->order_id)
+            ->where('inventory_item_id', $item['inventory_item_id'])
             ->update([
-                'quantity_received' => DB::raw("quantity_received + {$request->quantity}"),
-                'status' => $this->calculateStatus($request->order_id, $request->quantity),
+                'quantity_received' => DB::raw("quantity_received + {$item['quantity']}"),
+
+                'status' => $this->calculateStatus($order->id, $item['quantity']),
                 'received_at' => now()
             ]);
         
@@ -131,14 +156,15 @@ public function receive(Request $request)
         ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
             'location_id' => $request->location_id,          // From step 1
             'inventory_item_id' => $order->inventory_item_id,   
-            'available_adjustment' => + $request->quantity
+            'available_adjustment' => + $item['quantity']
         ]);
 
             // Abort if inventory update fails
     if ($adjustmentResponse->failed()) {
         throw new \Exception("Failed to update Shopify inventory.");
     }
-    });
+endforeach;
+
 
     return response()->json(['success' => true, 'message' => 'Order received successfully']);
 }

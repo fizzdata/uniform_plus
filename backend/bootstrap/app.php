@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $this->reportable(function (Throwable $e) {
+    $exceptions->reportable(function (Throwable $e) {
           Log::channel('slack')->error($e->getMessage(),[
               'file' => $e->getFile(),
               'Line' => $e->getLine(),
