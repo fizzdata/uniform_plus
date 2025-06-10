@@ -149,222 +149,262 @@
 
     <!-- Receive Quantity Modal -->
     <AppDialog v-model="showReceiveModal" title="Receive Inventory">
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700">
-        Select Location
-      </label>
-      <select
-        v-model="selectedLocation"
-        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-        :disabled="loadingLocations"
-      >
-        <option value="">Select a location</option>
-        <option v-for="item in locations" :key="item.id" :value="item.value">
-          {{ item.label }}
-        </option>
-      </select>
-      <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
-        Loading locations...
-      </p>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ordered</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To Receive</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="item in selectedOrder.items" :key="item.id">
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {{ selectedItem(item.inventory_item_id)?.variant_name || 'N/A' }}
-              <span v-if="selectedItem(item.inventory_item_id)?.barcode" class="text-gray-400 ml-2">
-                #{{ selectedItem(item.inventory_item_id)?.barcode }}
-              </span>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {{ item.quantity_ordered }}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-              {{ item.quantity_received }}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <input
-                v-model.number="item.quantity_to_receive"
-                type="number"
-                :min="0"
-                :max="item.quantity_ordered - item.quantity_received"
-                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <template #actions="{ close }">
-      <button
-        @click="close"
-        class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-      >
-        Cancel
-      </button>
-      <button
-        @click="submitReceive"
-        :disabled="isSubmitting || !isValidReceive"
-        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
-      >
-        {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
-      </button>
-    </template>
-  </AppDialog>
-
-    <!-- Create New Order -->
-    <AppDialog
-    v-model="showCreateOrderModal"
-    :title="isEdit ? 'Edit Order' : 'Create New Order'"
-    @close="resetForm"
-  >
-    <div class="space-y-4">
-      <!-- Supplier Name -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Supplier Name</label>
-        <input
-          v-model="newOrder.supplier"
-          type="text"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-          placeholder="Enter supplier name"
-        />
-      </div>
-
-      <!-- Product Selection -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Product</label>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">
+          Select Location
+        </label>
         <select
-          v-model="newOrder.productId"
+          v-model="selectedLocation"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-          :disabled="loadingItems"
-          @change="loadVariants"
+          :disabled="loadingLocations"
         >
-          <option value="">Select a product</option>
-          <option v-for="product in products" :key="product.id" :value="product.id">
-            {{ product.title }}
+          <option value="">Select a location</option>
+          <option v-for="item in locations" :key="item.id" :value="item.value">
+            {{ item.label }}
           </option>
         </select>
-        <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
-          Loading products...
+        <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
+          Loading locations...
         </p>
       </div>
 
-      <!-- Variants Table -->
-      <div v-if="newOrder.variants.length > 0" class="overflow-x-auto">
+      <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Quantity</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <div class="flex items-center">
-                  <span>Bulk Set</span>
-                  <input
-                    v-model.number="bulkQuantity"
-                    type="number"
-                    min="0"
-                    class="ml-2 w-20 px-2 py-1 border rounded text-sm"
-                    placeholder="Qty"
-                  />
-                  <button
-                    @click="applyBulkQuantity"
-                    class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200"
-                  >
-                    Apply
-                  </button>
-                </div>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Variant
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Ordered
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Received
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                To Receive
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="variant in newOrder.variants" :key="variant.id">
+            <tr v-for="item in selectedOrder.items" :key="item.id">
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                {{ variant.title }}
-                <span v-if="variant.barcode" class="text-gray-400 ml-2">#{{ variant.barcode }}</span>
+                {{
+                  selectedItem(item.inventory_item_id)?.variant_name || "N/A"
+                }}
+                <span
+                  v-if="selectedItem(item.inventory_item_id)?.barcode"
+                  class="text-gray-400 ml-2"
+                >
+                  #{{ selectedItem(item.inventory_item_id)?.barcode }}
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_ordered }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_received }}
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <input
-                  v-model.number="variant.quantity_ordered"
+                  v-model.number="item.quantity_to_receive"
                   type="number"
-                  min="0"
+                  :min="0"
+                  :max="item.quantity_ordered - item.quantity_received"
                   class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
-              </td>
-              <td class="px-4 py-3 text-center">
-                <button
-                  @click="variant.quantity_ordered = bulkQuantity"
-                  class="text-indigo-600 hover:text-indigo-900"
-                >
-                  Apply
-                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Paid or unpaid toggle -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Paid </label>
-        <div class="mt-1 relative flex items-center">
-          <Switch
-            v-model="newOrder.paid"
-            :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
-            class="relative inline-flex h-6 w-11 items-center rounded-full"
+      <template #actions="{ close }">
+        <button
+          @click="close"
+          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          @click="submitReceive"
+          :disabled="isSubmitting || !isValidReceive"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
+        >
+          {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
+        </button>
+      </template>
+    </AppDialog>
+
+    <!-- Create New Order -->
+    <AppDialog
+      v-model="showCreateOrderModal"
+      :title="isEdit ? 'Edit Order' : 'Create New Order'"
+      width="max-w-3xl"
+      @close="resetForm"
+    >
+      <div class="space-y-4">
+        <!-- Supplier Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700"
+            >Supplier Name</label
           >
-            <span class="sr-only">Toggle paid status</span>
-            <span
-              :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
-              class="inline-block h-4 w-4 transform rounded-full bg-white transition"
-            />
-          </Switch>
+          <input
+            v-model="newOrder.supplier"
+            type="text"
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+            placeholder="Enter supplier name"
+          />
+        </div>
+
+        <!-- Product Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Product</label>
+          <select
+            v-model="newOrder.productId"
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+            :disabled="loadingItems"
+            @change="loadVariants"
+          >
+            <option value="">Select a product</option>
+            <option
+              v-for="product in products"
+              :key="product.id"
+              :value="product.id"
+            >
+              {{ product.title }}
+            </option>
+          </select>
+          <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
+            Loading products...
+          </p>
+        </div>
+
+        <!-- Variants Table -->
+        <div v-if="newOrder.variants.length > 0" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Variant
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Order Quantity
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  <div class="flex items-center">
+                    <span>Bulk Set</span>
+                    <input
+                      v-model.number="bulkQuantity"
+                      type="number"
+                      min="0"
+                      class="ml-2 w-20 px-2 py-1 border rounded text-sm"
+                      placeholder="Qty"
+                    />
+                    <button
+                      @click="applyBulkQuantity"
+                      class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200 cursor-pointer"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="variant in newOrder.variants" :key="variant.id">
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  {{ variant.title }}
+                  <span v-if="variant.barcode" class="text-gray-400 ml-2"
+                    >#{{ variant.barcode }}</span
+                  >
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <input
+                    v-model.number="variant.quantity_ordered"
+                    type="number"
+                    min="0"
+                    class="shadow-sm p-1 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    @click="variant.quantity_ordered = bulkQuantity"
+                    class="text-indigo-600 hover:text-indigo-900 cursor-pointer"
+                  >
+                    Apply
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paid or unpaid toggle -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Paid </label>
+          <div class="mt-1 relative flex items-center">
+            <Switch
+              v-model="newOrder.paid"
+              :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
+              class="relative inline-flex h-6 w-11 items-center rounded-full"
+            >
+              <span class="sr-only">Toggle paid status</span>
+              <span
+                :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+              />
+            </Switch>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="errorItemMessage" class="text-red-500 text-sm">
+          {{ errorItemMessage }}
         </div>
       </div>
 
-      <!-- Error Message -->
-      <div v-if="errorItemMessage" class="text-red-500 text-sm">
-        {{ errorItemMessage }}
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <template #actions="{ close }">
-      <button
-        type="button"
-        @click="close"
-        class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        @click="createPurchaseOrder"
-        :disabled="isSubmitting || !hasSelectedVariants"
-        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
-      >
-        {{
-          isSubmitting
-            ? isEdit
-              ? "Editing..."
-              : "Creating..."
-            : isEdit
-            ? "Edit"
-            : "Create Order"
-        }}
-      </button>
-    </template>
-  </AppDialog>
+      <!-- Actions -->
+      <template #actions="{ close }">
+        <button
+          type="button"
+          @click="close"
+          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          @click="createPurchaseOrder"
+          :disabled="isSubmitting || !hasSelectedVariants"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+        >
+          {{
+            isSubmitting
+              ? isEdit
+                ? "Editing..."
+                : "Creating..."
+              : isEdit
+              ? "Edit"
+              : "Create Order"
+          }}
+        </button>
+      </template>
+    </AppDialog>
 
     <!-- Confirm Delete Modal -->
     <AppDialog v-model="showDeleteModal" :title="'Confirm Delete'">
@@ -418,7 +458,7 @@ const showCreateOrderModal = ref(false);
 const products = ref([]); // Renamed from items
 const bulkQuantity = ref(0);
 const selectedOrder = ref({
-  items: [] // Now stores multiple items
+  items: [], // Now stores multiple items
 });
 const isSubmitting = ref(false);
 const loadingItems = ref(false);
@@ -468,7 +508,7 @@ const newOrder = ref({
   supplier: "",
   productId: "",
   paid: false,
-  variants: [] // Stores variants with quantities
+  variants: [], // Stores variants with quantities
 });
 
 const fetchItemVariants = (data) => {
@@ -480,19 +520,17 @@ const fetchItemVariants = (data) => {
   }
 };
 const hasSelectedVariants = computed(() => {
-  return newOrder.value.variants.some(v => v.quantity_ordered > 0);
+  return newOrder.value.variants.some((v) => v.quantity_ordered > 0);
 });
 
 const isValidReceive = computed(() => {
   if (!selectedLocation.value) return false;
-  return selectedOrder.value.items.some(item => 
-    item.quantity_to_receive > 0 &&
-    item.quantity_to_receive <= (item.quantity_ordered - item.quantity_received)
+  return selectedOrder.value.items.some(
+    (item) =>
+      item.quantity_to_receive > 0 &&
+      item.quantity_to_receive <= item.quantity_ordered - item.quantity_received
   );
 });
-
-
-
 
 const selectedProduct = (shopifyItemId) => {
   if (!products.value.length) return "Loading..."; // Prevent lookup on empty array
@@ -515,7 +553,6 @@ const selectedItem = (shopifyItemId) => {
 
   return matchingItem || "N/a";
 };
-
 
 const confirmDelete = async () => {
   try {
@@ -547,7 +584,6 @@ const confirmDelete = async () => {
     isSubmitting.value = false;
   }
 };
-
 
 // Open create order modal
 const onClickNewOrderBtn = async () => {
@@ -670,10 +706,6 @@ const openCreateProductModal = (order) => {
   showCreateOrderModal.value = true;
 };
 
-
-
-
-
 const calculateStatus = (order) => {
   if (order.quantity_received >= order.quantity_ordered) return "received";
   if (order.quantity_received > 0) return "Partial";
@@ -687,17 +719,17 @@ watch([() => showReceiveModal, () => showCreateOrderModal], () => {
   }
 });
 const loadVariants = () => {
-  const product = products.value.find(p => p.id === newOrder.value.productId);
+  const product = products.value.find((p) => p.id === newOrder.value.productId);
   if (product) {
-    newOrder.value.variants = product.variants.map(variant => ({
+    newOrder.value.variants = product.variants.map((variant) => ({
       ...variant,
-      quantity_ordered: 0
+      quantity_ordered: 0,
     }));
   }
 };
 
 const applyBulkQuantity = () => {
-  newOrder.value.variants.forEach(variant => {
+  newOrder.value.variants.forEach((variant) => {
     variant.quantity_ordered = bulkQuantity.value;
   });
 };
@@ -714,7 +746,8 @@ const createPurchaseOrder = async () => {
     }
 
     if (!hasSelectedVariants.value) {
-      errorItemMessage.value = "Please enter quantities for at least one variant";
+      errorItemMessage.value =
+        "Please enter quantities for at least one variant";
       return;
     }
 
@@ -722,18 +755,16 @@ const createPurchaseOrder = async () => {
       supplier: newOrder.value.supplier,
       shopify_product_id: newOrder.value.productId,
       paid: newOrder.value.paid,
+      shop: shop,
       items: newOrder.value.variants
-        .filter(v => v.quantity_ordered > 0)
-        .map(variant => ({
+        .filter((v) => v.quantity_ordered > 0)
+        .map((variant) => ({
           inventory_item_id: variant.inventory_item_id,
-          quantity_ordered: variant.quantity_ordered
-        }))
+          quantity_ordered: variant.quantity_ordered,
+        })),
     };
 
-    const response = await axios.post(
-      `${apiUrl}/api/purchase-order`,
-      payload
-    );
+    const response = await axios.post(`${apiUrl}/api/purchase-order`, payload);
 
     if (response?.data?.success) {
       toast.success(response?.data?.message || "Order created successfully");
@@ -742,9 +773,13 @@ const createPurchaseOrder = async () => {
     }
   } catch (error) {
     console.error("Error creating purchase order:", error);
-    errorItemMessage.value = 
+    errorItemMessage.value =
       error.response?.data?.message ||
       "Failed to create order. Please try again.";
+
+    setTimeout(() => {
+      errorItemMessage.value = "";
+    }, 3000);
   } finally {
     isSubmitting.value = false;
   }
@@ -754,12 +789,15 @@ const openReceiveModal = async (orderGroup) => {
   // Create a copy of the items to avoid direct mutation
   selectedOrder.value = {
     ...orderGroup,
-    items: orderGroup.items.map(item => ({
+    items: orderGroup.items.map((item) => ({
       ...item,
-      quantity_to_receive: Math.max(0, item.quantity_ordered - item.quantity_received)
-    }))
+      quantity_to_receive: Math.max(
+        0,
+        item.quantity_ordered - item.quantity_received
+      ),
+    })),
   };
-  
+
   showReceiveModal.value = true;
 
   if (locations.value.length === 0) {
@@ -770,15 +808,15 @@ const openReceiveModal = async (orderGroup) => {
 const submitReceive = async () => {
   try {
     isSubmitting.value = true;
-    
+
     const payload = {
       location_id: selectedLocation.value,
       items: selectedOrder.value.items
-        .filter(item => item.quantity_to_receive > 0)
-        .map(item => ({
+        .filter((item) => item.quantity_to_receive > 0)
+        .map((item) => ({
           inventory_item_id: item.inventory_item_id,
-          quantity: item.quantity_to_receive
-        }))
+          quantity: item.quantity_to_receive,
+        })),
     };
 
     const response = await axios.post(
@@ -804,11 +842,11 @@ const fetchProducts = async () => {
   try {
     loadingItems.value = true;
     const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`);
-    
+
     products.value = response?.data?.data || [];
-    
-    allProductsItems.value = products.value.flatMap(product => 
-      product.variants.map(variant => ({
+
+    allProductsItems.value = products.value.flatMap((product) =>
+      product.variants.map((variant) => ({
         label: product.title,
         value: variant.id,
         inventory_item_id: variant.inventory_item_id,
@@ -831,7 +869,7 @@ const resetForm = () => {
     supplier: "",
     productId: "",
     paid: false,
-    variants: []
+    variants: [],
   };
   bulkQuantity.value = 0;
   errorMessage.value = "";
