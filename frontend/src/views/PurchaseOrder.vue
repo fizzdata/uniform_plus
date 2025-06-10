@@ -149,185 +149,222 @@
 
     <!-- Receive Quantity Modal -->
     <AppDialog v-model="showReceiveModal" title="Receive Inventory">
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700">
-          Quantity to Receive
-        </label>
-        <input
-          type="number"
-          v-model.number="receiveQuantity"
-          :max="
-            selectedOrder.quantity_ordered - selectedOrder.quantity_received
-          "
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-        />
-        <p class="mt-2 text-sm text-gray-500">
-          Max receivable:
-          {{ selectedOrder.quantity_ordered - selectedOrder.quantity_received }}
-        </p>
-      </div>
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">
+        Select Location
+      </label>
+      <select
+        v-model="selectedLocation"
+        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+        :disabled="loadingLocations"
+      >
+        <option value="">Select a location</option>
+        <option v-for="item in locations" :key="item.id" :value="item.value">
+          {{ item.label }}
+        </option>
+      </select>
+      <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
+        Loading locations...
+      </p>
+    </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">
-          Select Location
-        </label>
-        <select
-          v-model="selectedLocation"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-          :disabled="loadingLocations"
-        >
-          <option value="">Select an item</option>
-          <option v-for="item in locations" :key="item.id" :value="item.value">
-            {{ item.label }}
-          </option>
-        </select>
-        <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
-          Loading locations...
-        </p>
-      </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ordered</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To Receive</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="item in selectedOrder.items" :key="item.id">
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              {{ selectedItem(item.inventory_item_id)?.variant_name || 'N/A' }}
+              <span v-if="selectedItem(item.inventory_item_id)?.barcode" class="text-gray-400 ml-2">
+                #{{ selectedItem(item.inventory_item_id)?.barcode }}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              {{ item.quantity_ordered }}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              {{ item.quantity_received }}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <input
+                v-model.number="item.quantity_to_receive"
+                type="number"
+                :min="0"
+                :max="item.quantity_ordered - item.quantity_received"
+                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <template #actions="{ close }">
-        <button
-          @click="close"
-          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-        >
-          Cancel
-        </button>
-        <button
-          @click="submitReceive"
-          :disabled="isSubmitting"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
-        >
-          {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
-        </button>
-      </template>
-    </AppDialog>
+    <template #actions="{ close }">
+      <button
+        @click="close"
+        class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+      >
+        Cancel
+      </button>
+      <button
+        @click="submitReceive"
+        :disabled="isSubmitting || !isValidReceive"
+        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
+      >
+        {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
+      </button>
+    </template>
+  </AppDialog>
 
     <!-- Create New Order -->
     <AppDialog
-      v-model="showCreateOrderModal"
-      :title="isEdit ? 'Edit Order' : 'Create New Order'"
-      :close="() => (variants = [])"
-    >
-      <div class="space-y-4">
-        <!-- Supplier Name -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700"
-            >Supplier Name
-          </label>
-          <input
-            v-model="newOrder.supplier"
-            type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            placeholder="Enter supplier name"
-          />
-        </div>
+    v-model="showCreateOrderModal"
+    :title="isEdit ? 'Edit Order' : 'Create New Order'"
+    @close="resetForm"
+  >
+    <div class="space-y-4">
+      <!-- Supplier Name -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Supplier Name</label>
+        <input
+          v-model="newOrder.supplier"
+          type="text"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+          placeholder="Enter supplier name"
+        />
+      </div>
 
-        <!-- Item Selection -->
-        <div v-if="!isEdit">
-          <label class="block text-sm font-medium text-gray-700">Item</label>
-          <select
-            v-model="newOrder.itemId"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="loadingItems || isEdit"
-            @change="fetchItemVariants"
+      <!-- Product Selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Product</label>
+        <select
+          v-model="newOrder.productId"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
+          :disabled="loadingItems"
+          @change="loadVariants"
+        >
+          <option value="">Select a product</option>
+          <option v-for="product in products" :key="product.id" :value="product.id">
+            {{ product.title }}
+          </option>
+        </select>
+        <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
+          Loading products...
+        </p>
+      </div>
+
+      <!-- Variants Table -->
+      <div v-if="newOrder.variants.length > 0" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Quantity</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div class="flex items-center">
+                  <span>Bulk Set</span>
+                  <input
+                    v-model.number="bulkQuantity"
+                    type="number"
+                    min="0"
+                    class="ml-2 w-20 px-2 py-1 border rounded text-sm"
+                    placeholder="Qty"
+                  />
+                  <button
+                    @click="applyBulkQuantity"
+                    class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="variant in newOrder.variants" :key="variant.id">
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{ variant.title }}
+                <span v-if="variant.barcode" class="text-gray-400 ml-2">#{{ variant.barcode }}</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input
+                  v-model.number="variant.quantity_ordered"
+                  type="number"
+                  min="0"
+                  class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </td>
+              <td class="px-4 py-3 text-center">
+                <button
+                  @click="variant.quantity_ordered = bulkQuantity"
+                  class="text-indigo-600 hover:text-indigo-900"
+                >
+                  Apply
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paid or unpaid toggle -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Paid </label>
+        <div class="mt-1 relative flex items-center">
+          <Switch
+            v-model="newOrder.paid"
+            :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full"
           >
-            <option value="">Select an item</option>
-            <option v-for="item in items" :key="item.id" :value="item.value">
-              {{ item.label }}
-            </option>
-          </select>
-          <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
-            Loading items...
-          </p>
-        </div>
-
-        <!-- Variant Selection -->
-        <div v-if="!isEdit">
-          <label class="block text-sm font-medium text-gray-700">
-            Select Variant
-          </label>
-          <select
-            v-model="newOrder.inventory_item_id"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="variants.length === 0 || isEdit"
-          >
-            <option value="">Select a variant</option>
-            <option
-              v-for="variant in variants"
-              :key="variant.inventory_item_id"
-              :value="variant.inventory_item_id"
-            >
-              {{ variant.title }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Quantity -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700"
-            >Quantity
-          </label>
-          <input
-            v-model.number="newOrder.quantity"
-            type="number"
-            min="1"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            placeholder="Enter quantity"
-          />
-        </div>
-
-        <!-- Paid or unpaid toggle -->
-        <div v-if="isEdit">
-          <label class="block text-sm font-medium text-gray-700">Paid </label>
-          <div class="mt-1 relative flex items-center">
-            <Switch
-              v-model="newOrder.paid"
-              :class="newOrder.paid ? 'bg-indigo-600' : 'bg-gray-200'"
-              class="relative inline-flex h-6 w-11 items-center rounded-full"
-            >
-              <span class="sr-only">Toggle paid status</span>
-              <span
-                :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
-                class="inline-block h-4 w-4 transform rounded-full bg-white transition"
-              />
-            </Switch>
-          </div>
-        </div>
-
-        <!-- Error Message -->
-        <div v-if="errorItemMessage" class="text-red-500 text-sm">
-          {{ errorItemMessage }}
+            <span class="sr-only">Toggle paid status</span>
+            <span
+              :class="newOrder.paid ? 'translate-x-6' : 'translate-x-1'"
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+            />
+          </Switch>
         </div>
       </div>
 
-      <!-- Actions -->
-      <template #actions="{ close }">
-        <button
-          type="button"
-          @click="close"
-          class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          @click="createPurchaseOrder"
-          :disabled="isSubmitting"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
-        >
-          {{
-            isSubmitting
-              ? isEdit
-                ? "Editing..."
-                : "Creating..."
-              : isEdit
-              ? "Edit"
-              : "Create Order"
-          }}
-        </button>
-      </template>
-    </AppDialog>
+      <!-- Error Message -->
+      <div v-if="errorItemMessage" class="text-red-500 text-sm">
+        {{ errorItemMessage }}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <template #actions="{ close }">
+      <button
+        type="button"
+        @click="close"
+        class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        @click="createPurchaseOrder"
+        :disabled="isSubmitting || !hasSelectedVariants"
+        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+      >
+        {{
+          isSubmitting
+            ? isEdit
+              ? "Editing..."
+              : "Creating..."
+            : isEdit
+            ? "Edit"
+            : "Create Order"
+        }}
+      </button>
+    </template>
+  </AppDialog>
 
     <!-- Confirm Delete Modal -->
     <AppDialog v-model="showDeleteModal" :title="'Confirm Delete'">
@@ -375,11 +412,14 @@ const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
 const itemsPerPage = ref(20);
-const selectedOrder = ref(null);
 const receiveQuantity = ref(0);
 const showReceiveModal = ref(false);
 const showCreateOrderModal = ref(false);
-const items = ref([]);
+const products = ref([]); // Renamed from items
+const bulkQuantity = ref(0);
+const selectedOrder = ref({
+  items: [] // Now stores multiple items
+});
 const isSubmitting = ref(false);
 const loadingItems = ref(false);
 const loadingLocations = ref(false);
@@ -426,10 +466,9 @@ console.log("groupedOrders", groupedOrders);
 // New order form
 const newOrder = ref({
   supplier: "",
-  itemId: "",
-  quantity: 1,
-  inventory_item_id: "",
+  productId: "",
   paid: false,
+  variants: [] // Stores variants with quantities
 });
 
 const fetchItemVariants = (data) => {
@@ -440,40 +479,23 @@ const fetchItemVariants = (data) => {
     variants.value = matchingItem.variants;
   }
 };
+const hasSelectedVariants = computed(() => {
+  return newOrder.value.variants.some(v => v.quantity_ordered > 0);
+});
 
-//Fetch items from API
-const fetchItems = async () => {
-  try {
-    loadingItems.value = true;
-    const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
+const isValidReceive = computed(() => {
+  if (!selectedLocation.value) return false;
+  return selectedOrder.value.items.some(item => 
+    item.quantity_to_receive > 0 &&
+    item.quantity_to_receive <= (item.quantity_ordered - item.quantity_received)
+  );
+});
 
-    items.value =
-      response?.data?.data?.map((variant) => ({
-        label: `${variant.title}`,
-        value: variant.id,
-        variants: variant.variants,
-      })) || [];
-    allProductsItems.value =
-      response?.data?.data?.flatMap((product) =>
-        product.variants.map((variant) => ({
-          label: `${product.title}`,
-          value: variant.id,
-          inventory_item_id: variant.inventory_item_id,
-          barcode: variant.barcode,
-          variant_name: variant.title,
-          shopify_product_id: product.id,
-        }))
-      ) || [];
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    errorItemMessage.value = "Failed to load items. Please try again.";
-  } finally {
-    loadingItems.value = false;
-  }
-};
+
+
 
 const selectedProduct = (shopifyItemId) => {
-  if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
+  if (!products.value.length) return "Loading..."; // Prevent lookup on empty array
 
   // Find the matching product where its ID equals shopifyItemId
   const matchingItem = allProductsItems.value.find(
@@ -484,7 +506,7 @@ const selectedProduct = (shopifyItemId) => {
 };
 
 const selectedItem = (shopifyItemId) => {
-  if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
+  if (!products.value.length) return "Loading..."; // Prevent lookup on empty array
 
   // Find the matching product where its ID equals shopifyItemId
   const matchingItem = allProductsItems.value.find(
@@ -493,75 +515,7 @@ const selectedItem = (shopifyItemId) => {
 
   return matchingItem || "N/a";
 };
-const createPurchaseOrder = async () => {
-  try {
-    isSubmitting.value = true;
-    errorItemMessage.value = "";
 
-    // Basic validation
-    if (
-      !newOrder.value.supplier ||
-      !newOrder.value.itemId ||
-      !newOrder.value.inventory_item_id ||
-      !newOrder.value.quantity
-    ) {
-      errorItemMessage.value = "Please fill in all fields";
-      return;
-    }
-
-    if (isEdit.value) {
-      const payload = {
-        supplier: newOrder.value.supplier,
-        quantity_ordered: Number(newOrder.value.quantity),
-        paid: newOrder.value.paid, // will be true only if explicitly 'true'
-        shop: shop,
-      };
-
-      // TODO: Replace with your actual edit API endpoint
-      const response = await axios.post(
-        `${apiUrl}/api/purchase-orders/${selectRecord.value.id}/update`,
-        payload
-      );
-
-      if (response?.data?.success) {
-        toast(response?.data?.message || "Order updated successfully.", {
-          type: "success",
-        });
-        await fetchOrders();
-      }
-    } else {
-      const payload = {
-        supplier: newOrder.value.supplier,
-        shopify_product_id: newOrder.value.itemId,
-        quantity_ordered: Number(newOrder.value.quantity),
-        shop: shop,
-        inventory_item_id: Number(newOrder.value.inventory_item_id),
-      };
-      const response = await axios.post(
-        `${apiUrl}/api/purchase-order`,
-        payload
-      );
-      if (response?.data?.success) {
-        toast(response?.data?.message || "Order created successfully.", {
-          type: "success",
-        });
-        await fetchOrders();
-        variants.value = [];
-      }
-    }
-
-    // Reset form and close modal
-    resetForm();
-    showCreateOrderModal.value = false;
-  } catch (error) {
-    console.error("Error creating purchase order:", error);
-    errorItemMessage.value =
-      error.response?.data?.message ||
-      "Failed to create order. Please try again.";
-  } finally {
-    isSubmitting.value = false;
-  }
-};
 
 const confirmDelete = async () => {
   try {
@@ -594,16 +548,6 @@ const confirmDelete = async () => {
   }
 };
 
-// Reset form
-const resetForm = () => {
-  newOrder.value = {
-    supplier: "",
-    itemId: "",
-    quantity: 1,
-    inventory_item_id: "",
-  };
-  errorMessage.value = "";
-};
 
 // Open create order modal
 const onClickNewOrderBtn = async () => {
@@ -611,7 +555,7 @@ const onClickNewOrderBtn = async () => {
   showCreateOrderModal.value = true;
   resetForm();
   if (items.value.length === 0) {
-    await fetchItems();
+    await fetchProducts();
   }
 };
 
@@ -726,51 +670,9 @@ const openCreateProductModal = (order) => {
   showCreateOrderModal.value = true;
 };
 
-const openReceiveModal = async (order) => {
-  selectedOrder.value = order;
-  receiveQuantity.value = order.quantity_ordered - order.quantity_received;
-  showReceiveModal.value = true;
 
-  if (locations.value.length === 0) {
-    await fetchInventoryLocation();
-  }
-};
 
-const submitReceive = async () => {
-  try {
-    if (receiveQuantity.value <= 0) return;
 
-    isSubmitting.value = true;
-    const response = await axios.post(
-      `${apiUrl}/api/purchase-orders/${selectedOrder.value.id}/receive?shop=${shop}`,
-      {
-        quantity: receiveQuantity.value,
-        location_id: selectedLocation.value,
-      }
-    );
-
-    if (response.data.success) {
-      isSubmitting.value = false;
-
-      toast(response.data.message || "Order received successfully.", {
-        type: "success",
-      });
-      // Update local state
-      const updatedOrder = orders.value.find(
-        (o) => o.id === selectedOrder.value.id
-      );
-
-      updatedOrder.quantity_received += receiveQuantity.value;
-      updatedOrder.status = calculateStatus(updatedOrder);
-      variants.value = [];
-      showReceiveModal.value = false;
-    }
-  } catch (error) {
-    errorMessage.value = "Failed to update order: " + error.message;
-    console.error("Receive error:", error);
-    isSubmitting.value = false;
-  }
-};
 
 const calculateStatus = (order) => {
   if (order.quantity_received >= order.quantity_ordered) return "received";
@@ -784,10 +686,160 @@ watch([() => showReceiveModal, () => showCreateOrderModal], () => {
     fetchOrders();
   }
 });
+const loadVariants = () => {
+  const product = products.value.find(p => p.id === newOrder.value.productId);
+  if (product) {
+    newOrder.value.variants = product.variants.map(variant => ({
+      ...variant,
+      quantity_ordered: 0
+    }));
+  }
+};
 
-// Lifecycle hooks
+const applyBulkQuantity = () => {
+  newOrder.value.variants.forEach(variant => {
+    variant.quantity_ordered = bulkQuantity.value;
+  });
+};
+
+const createPurchaseOrder = async () => {
+  try {
+    isSubmitting.value = true;
+    errorItemMessage.value = "";
+
+    // Validate form
+    if (!newOrder.value.supplier || !newOrder.value.productId) {
+      errorItemMessage.value = "Supplier and product are required";
+      return;
+    }
+
+    if (!hasSelectedVariants.value) {
+      errorItemMessage.value = "Please enter quantities for at least one variant";
+      return;
+    }
+
+    const payload = {
+      supplier: newOrder.value.supplier,
+      shopify_product_id: newOrder.value.productId,
+      paid: newOrder.value.paid,
+      items: newOrder.value.variants
+        .filter(v => v.quantity_ordered > 0)
+        .map(variant => ({
+          inventory_item_id: variant.inventory_item_id,
+          quantity_ordered: variant.quantity_ordered
+        }))
+    };
+
+    const response = await axios.post(
+      `${apiUrl}/api/purchase-order`,
+      payload
+    );
+
+    if (response?.data?.success) {
+      toast.success(response?.data?.message || "Order created successfully");
+      await fetchOrders();
+      showCreateOrderModal.value = false;
+    }
+  } catch (error) {
+    console.error("Error creating purchase order:", error);
+    errorItemMessage.value = 
+      error.response?.data?.message ||
+      "Failed to create order. Please try again.";
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const openReceiveModal = async (orderGroup) => {
+  // Create a copy of the items to avoid direct mutation
+  selectedOrder.value = {
+    ...orderGroup,
+    items: orderGroup.items.map(item => ({
+      ...item,
+      quantity_to_receive: Math.max(0, item.quantity_ordered - item.quantity_received)
+    }))
+  };
+  
+  showReceiveModal.value = true;
+
+  if (locations.value.length === 0) {
+    await fetchInventoryLocation();
+  }
+};
+
+const submitReceive = async () => {
+  try {
+    isSubmitting.value = true;
+    
+    const payload = {
+      location_id: selectedLocation.value,
+      items: selectedOrder.value.items
+        .filter(item => item.quantity_to_receive > 0)
+        .map(item => ({
+          inventory_item_id: item.inventory_item_id,
+          quantity: item.quantity_to_receive
+        }))
+    };
+
+    const response = await axios.post(
+      `${apiUrl}/api/purchase-orders/receive?shop=${shop}`,
+      payload
+    );
+
+    if (response.data.success) {
+      toast.success(response.data.message || "Inventory received successfully");
+      await fetchOrders();
+      showReceiveModal.value = false;
+    }
+  } catch (error) {
+    console.error("Error receiving inventory:", error);
+    toast.error("Failed to receive inventory. Please try again.");
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Fetch products instead of items
+const fetchProducts = async () => {
+  try {
+    loadingItems.value = true;
+    const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`);
+    
+    products.value = response?.data?.data || [];
+    
+    allProductsItems.value = products.value.flatMap(product => 
+      product.variants.map(variant => ({
+        label: product.title,
+        value: variant.id,
+        inventory_item_id: variant.inventory_item_id,
+        barcode: variant.barcode,
+        variant_name: variant.title,
+        shopify_product_id: product.id,
+      }))
+    );
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    errorItemMessage.value = "Failed to load products. Please try again.";
+  } finally {
+    loadingItems.value = false;
+  }
+};
+
+// Reset form
+const resetForm = () => {
+  newOrder.value = {
+    supplier: "",
+    productId: "",
+    paid: false,
+    variants: []
+  };
+  bulkQuantity.value = 0;
+  errorMessage.value = "";
+};
+
+// Update onMounted to fetch products
 onMounted(() => {
   fetchOrders();
-  fetchItems();
+  fetchProducts(); // Renamed from fetchItems
 });
 </script>
