@@ -43,6 +43,13 @@
           <span class="text-gray-500">{{
             expandedGroups[supplier] ? "−" : "+"
           }}</span>
+
+          <button
+  @click.stop="openReceiveModal(items)"
+  class="text-gray-600 hover:text-gray-900 cursor-pointer bg-blue-100 px-3 py-1 rounded-md"
+>
+  Receive All
+</button>
         </div>
 
         <!-- Group Body -->
@@ -785,21 +792,24 @@ const createPurchaseOrder = async () => {
   }
 };
 
-const openReceiveModal = async (orderGroup) => {
-  // Create a copy of the items to avoid direct mutation
+const openReceiveModal = async (productGroup) => {
+  // Get all orders for this product
+  const productOrders = orders.value.filter(
+    order => order.shopify_product_id === productGroup.shopify_product_id
+  );
+
   selectedOrder.value = {
-    ...orderGroup,
-    items: orderGroup.items.map((item) => ({
-      ...item,
-      quantity_to_receive: Math.max(
-        0,
-        item.quantity_ordered - item.quantity_received
-      ),
-    })),
+    productId: productGroup.shopify_product_id,
+    productName: selectedProduct(productGroup.shopify_product_id)?.label,
+    items: productOrders.map(order => ({
+      ...order,
+      quantity_to_receive: Math.max(0, order.quantity_ordered - order.quantity_received),
+      variant_name: selectedItem(order.inventory_item_id)?.variant_name || 'Default'
+    }))
   };
 
   showReceiveModal.value = true;
-
+  
   if (locations.value.length === 0) {
     await fetchInventoryLocation();
   }
