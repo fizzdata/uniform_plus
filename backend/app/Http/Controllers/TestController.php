@@ -12,8 +12,8 @@ use App\Models\Shopify;
 class TestController extends Controller
 {
     public function index(Request $request){
-        
-            
+
+      
     $shop = new Shopify(1); // Assuming shop_id is 1 for testing
     try {
             $products = $shop->get_products();

@@ -26,94 +26,68 @@
     </div>
 
     <!-- Orders Table -->
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+    <div v-else class="space-y-4">
+      <div
+        v-for="(items, supplier) in groupedOrders"
+        :key="supplier"
+        class="border rounded-lg"
+      >
+        <!-- Group Header -->
+        <div
+          class="bg-gray-100 px-4 py-2 cursor-pointer flex justify-between items-center rounded-2xl"
+          @click="toggleGroup(supplier)"
+        >
+          <h3 class="font-semibold capitalize">
+            Product: {{ selectedProduct(supplier)?.label }}
+          </h3>
+          <span class="text-gray-500">{{
+            expandedGroups[supplier] ? "−" : "+"
+          }}</span>
+
+          <button
+  @click.stop="openReceiveModal(items)"
+  class="text-gray-600 hover:text-gray-900 cursor-pointer bg-blue-100 px-3 py-1 rounded-md"
+>
+  Receive All
+</button>
+        </div>
+
+        <!-- Group Body -->
+        <table
+          v-if="expandedGroups[supplier]"
+          class="min-w-full divide-y divide-gray-200 text-sm"
+        >
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Suplier
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Barcode
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                item Name
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Qty Ordered
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Qty Received
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Paid
-              </th>
+              <th class="px-4 py-2 text-left">Order ID</th>
+              <th class="px-4 py-2 text-left">Supplier</th>
+              <th class="px-4 py-2 text-left">Barcode</th>
+              <th class="px-4 py-2 text-left">Qty Ordered</th>
+              <th class="px-4 py-2 text-left">Qty Received</th>
+              <th class="px-4 py-2 text-left">Status</th>
+              <th class="px-4 py-2 text-left">Paid</th>
               <th scope="col" class="relative px-6 py-3">
                 <span class="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="item in orders" :key="item.id" class="hover:bg-gray-50">
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize"
-              >
-                {{ item.supplier_name }}
-              </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-              >
+          <tbody class="divide-y divide-gray-100 rounded-bl-2xl">
+            <tr
+              v-for="item in items.items"
+              :key="item.id"
+              class="hover:bg-gray-50"
+            >
+              <td class="px-4 py-2">{{ item.id }}</td>
+              <td class="px-4 py-2">{{ item.supplier_name }}</td>
+              <td class="px-4 py-2">
                 <span v-if="selectedItem(item.inventory_item_id)?.barcode">
                   #{{ selectedItem(item.inventory_item_id)?.barcode }}
                 </span>
                 <span v-else>N/a</span>
               </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize"
-              >
-                {{
-                  selectedItem(item.inventory_item_id)
-                    ? (selectedItem(item.inventory_item_id).label || "") +
-                      (selectedItem(item.inventory_item_id).variant_name
-                        ? " (" +
-                          selectedItem(item.inventory_item_id).variant_name +
-                          ")"
-                        : "")
-                    : "N/A"
-                }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.quantity_ordered }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.quantity_received }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+              <td class="px-4 py-2">{{ item.quantity_ordered }}</td>
+              <td class="px-4 py-2">{{ item.quantity_received }}</td>
+              <td class="px-4 py-2 capitalize">
                 <span
                   :class="[
                     'px-2 py-1 rounded-full text-xs font-medium capitalize',
@@ -123,9 +97,7 @@
                   {{ item.status }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ item.paid ? "Yes" : "No" }}
-              </td>
+              <td class="px-4 py-2">{{ item.paid ? "Yes" : "No" }}</td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
@@ -186,25 +158,6 @@
     <AppDialog v-model="showReceiveModal" title="Receive Inventory">
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700">
-          Quantity to Receive
-        </label>
-        <input
-          type="number"
-          v-model.number="receiveQuantity"
-          :max="
-            selectedOrder.quantity_ordered - selectedOrder.quantity_received
-          "
-          min="1"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-        />
-        <p class="mt-2 text-sm text-gray-500">
-          Max receivable:
-          {{ selectedOrder.quantity_ordered - selectedOrder.quantity_received }}
-        </p>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">
           Select Location
         </label>
         <select
@@ -212,7 +165,7 @@
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
           :disabled="loadingLocations"
         >
-          <option value="">Select an item</option>
+          <option value="">Select a location</option>
           <option v-for="item in locations" :key="item.id" :value="item.value">
             {{ item.label }}
           </option>
@@ -220,6 +173,65 @@
         <p v-if="loadingLocations" class="mt-1 text-sm text-gray-500">
           Loading locations...
         </p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Variant
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Ordered
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Received
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                To Receive
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="item in selectedOrder.items" :key="item.id">
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{
+                  selectedItem(item.inventory_item_id)?.variant_name || "N/A"
+                }}
+                <span
+                  v-if="selectedItem(item.inventory_item_id)?.barcode"
+                  class="text-gray-400 ml-2"
+                >
+                  #{{ selectedItem(item.inventory_item_id)?.barcode }}
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_ordered }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                {{ item.quantity_received }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input
+                  v-model.number="item.quantity_to_receive"
+                  type="number"
+                  :min="0"
+                  :max="item.quantity_ordered - item.quantity_received"
+                  class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <template #actions="{ close }">
@@ -231,7 +243,7 @@
         </button>
         <button
           @click="submitReceive"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || !isValidReceive"
           class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
         >
           {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
@@ -243,14 +255,15 @@
     <AppDialog
       v-model="showCreateOrderModal"
       :title="isEdit ? 'Edit Order' : 'Create New Order'"
-      :close="() => (variants = [])"
+      width="max-w-3xl"
+      @close="resetForm"
     >
       <div class="space-y-4">
         <!-- Supplier Name -->
         <div>
           <label class="block text-sm font-medium text-gray-700"
-            >Supplier Name
-          </label>
+            >Supplier Name</label
+          >
           <input
             v-model="newOrder.supplier"
             type="text"
@@ -259,62 +272,97 @@
           />
         </div>
 
-        <!-- Item Selection -->
-        <div v-if="!isEdit">
-          <label class="block text-sm font-medium text-gray-700">Item</label>
+        <!-- Product Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Product</label>
           <select
-            v-model="newOrder.itemId"
+            v-model="newOrder.productId"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="loadingItems || isEdit"
-            @change="fetchItemVariants"
+            :disabled="loadingItems"
+            @change="loadVariants"
           >
-            <option value="">Select an item</option>
-            <option v-for="item in items" :key="item.id" :value="item.value">
-              {{ item.label }}
+            <option value="">Select a product</option>
+            <option
+              v-for="product in products"
+              :key="product.id"
+              :value="product.id"
+            >
+              {{ product.title }}
             </option>
           </select>
           <p v-if="loadingItems" class="mt-1 text-sm text-gray-500">
-            Loading items...
+            Loading products...
           </p>
         </div>
 
-        <!-- Variant Selection -->
-        <div v-if="!isEdit">
-          <label class="block text-sm font-medium text-gray-700">
-            Select Variant
-          </label>
-          <select
-            v-model="newOrder.inventory_item_id"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="variants.length === 0 || isEdit"
-          >
-            <option value="">Select a variant</option>
-            <option
-              v-for="variant in variants"
-              :key="variant.inventory_item_id"
-              :value="variant.inventory_item_id"
-            >
-              {{ variant.title }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Quantity -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700"
-            >Quantity
-          </label>
-          <input
-            v-model.number="newOrder.quantity"
-            type="number"
-            min="1"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            placeholder="Enter quantity"
-          />
+        <!-- Variants Table -->
+        <div v-if="newOrder.variants.length > 0" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Variant
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Order Quantity
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  <div class="flex items-center">
+                    <span>Bulk Set</span>
+                    <input
+                      v-model.number="bulkQuantity"
+                      type="number"
+                      min="0"
+                      class="ml-2 w-20 px-2 py-1 border rounded text-sm"
+                      placeholder="Qty"
+                    />
+                    <button
+                      @click="applyBulkQuantity"
+                      class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded hover:bg-indigo-200 cursor-pointer"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="variant in newOrder.variants" :key="variant.id">
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                  {{ variant.title }}
+                  <span v-if="variant.barcode" class="text-gray-400 ml-2"
+                    >#{{ variant.barcode }}</span
+                  >
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <input
+                    v-model.number="variant.quantity_ordered"
+                    type="number"
+                    min="0"
+                    class="shadow-sm p-1 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    @click="variant.quantity_ordered = bulkQuantity"
+                    class="text-indigo-600 hover:text-indigo-900 cursor-pointer"
+                  >
+                    Apply
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <!-- Paid or unpaid toggle -->
-        <div v-if="isEdit">
+        <div>
           <label class="block text-sm font-medium text-gray-700">Paid </label>
           <div class="mt-1 relative flex items-center">
             <Switch
@@ -349,7 +397,7 @@
         <button
           type="button"
           @click="createPurchaseOrder"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || !hasSelectedVariants"
           class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
         >
           {{
@@ -411,11 +459,14 @@ const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
 const itemsPerPage = ref(20);
-const selectedOrder = ref(null);
 const receiveQuantity = ref(0);
 const showReceiveModal = ref(false);
 const showCreateOrderModal = ref(false);
-const items = ref([]);
+const products = ref([]); // Renamed from items
+const bulkQuantity = ref(0);
+const selectedOrder = ref({
+  items: [], // Now stores multiple items
+});
 const isSubmitting = ref(false);
 const loadingItems = ref(false);
 const loadingLocations = ref(false);
@@ -428,13 +479,43 @@ const variants = ref([]);
 const allProductsItems = ref([]);
 const showDeleteModal = ref(false);
 const selectRecord = ref("");
+
+// Handle group expand/collapse state
+const expandedGroups = ref({});
+
+function toggleGroup(key) {
+  expandedGroups.value[key] = !expandedGroups.value[key];
+}
+
+const groupedOrders = computed(() => {
+  const result = {};
+
+  for (const order of orders.value) {
+    const shopifyId = order.shopify_product_id || "unknown_id";
+    const supplierName = order.supplier_name || "Unknown Supplier";
+
+    if (!result[shopifyId]) {
+      result[shopifyId] = {
+        shopify_product_id: shopifyId,
+        supplier_name: supplierName,
+        items: [],
+      };
+    }
+
+    result[shopifyId].items.push(order);
+  }
+
+  return result;
+});
+
+console.log("groupedOrders", groupedOrders);
+
 // New order form
 const newOrder = ref({
   supplier: "",
-  itemId: "",
-  quantity: 1,
-  inventory_item_id: "",
+  productId: "",
   paid: false,
+  variants: [], // Stores variants with quantities
 });
 
 const fetchItemVariants = (data) => {
@@ -445,39 +526,32 @@ const fetchItemVariants = (data) => {
     variants.value = matchingItem.variants;
   }
 };
+const hasSelectedVariants = computed(() => {
+  return newOrder.value.variants.some((v) => v.quantity_ordered > 0);
+});
 
-//Fetch items from API
-const fetchItems = async () => {
-  try {
-    loadingItems.value = true;
-    const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`); // Adjust the endpoint as needed
+const isValidReceive = computed(() => {
+  if (!selectedLocation.value) return false;
+  return selectedOrder.value.items.some(
+    (item) =>
+      item.quantity_to_receive > 0 &&
+      item.quantity_to_receive <= item.quantity_ordered - item.quantity_received
+  );
+});
 
-    items.value =
-      response?.data?.data?.map((variant) => ({
-        label: `${variant.title}`,
-        value: variant.id,
-        variants: variant.variants,
-      })) || [];
-    allProductsItems.value =
-      response?.data?.data?.flatMap((product) =>
-        product.variants.map((variant) => ({
-          label: `${product.title}`,
-          value: variant.id,
-          inventory_item_id: variant.inventory_item_id,
-          barcode: variant.barcode,
-          variant_name: variant.title,
-        }))
-      ) || [];
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    errorItemMessage.value = "Failed to load items. Please try again.";
-  } finally {
-    loadingItems.value = false;
-  }
+const selectedProduct = (shopifyItemId) => {
+  if (!products.value.length) return "Loading..."; // Prevent lookup on empty array
+
+  // Find the matching product where its ID equals shopifyItemId
+  const matchingItem = allProductsItems.value.find(
+    (item) => Number(item.shopify_product_id) === Number(shopifyItemId)
+  );
+
+  return matchingItem || "N/a";
 };
 
 const selectedItem = (shopifyItemId) => {
-  if (!items.value.length) return "Loading..."; // Prevent lookup on empty array
+  if (!products.value.length) return "Loading..."; // Prevent lookup on empty array
 
   // Find the matching product where its ID equals shopifyItemId
   const matchingItem = allProductsItems.value.find(
@@ -485,75 +559,6 @@ const selectedItem = (shopifyItemId) => {
   );
 
   return matchingItem || "N/a";
-};
-const createPurchaseOrder = async () => {
-  try {
-    isSubmitting.value = true;
-    errorItemMessage.value = "";
-
-    // Basic validation
-    if (
-      !newOrder.value.supplier ||
-      !newOrder.value.itemId ||
-      !newOrder.value.inventory_item_id ||
-      !newOrder.value.quantity
-    ) {
-      errorItemMessage.value = "Please fill in all fields";
-      return;
-    }
-
-    if (isEdit.value) {
-      const payload = {
-        supplier: newOrder.value.supplier,
-        quantity_ordered: Number(newOrder.value.quantity),
-        paid: newOrder.value.paid, // will be true only if explicitly 'true'
-        shop: shop,
-      };
-
-      // TODO: Replace with your actual edit API endpoint
-      const response = await axios.post(
-        `${apiUrl}/api/purchase-orders/${selectRecord.value.id}/update`,
-        payload
-      );
-
-      if (response?.data?.success) {
-        toast(response?.data?.message || "Order updated successfully.", {
-          type: "success",
-        });
-        await fetchOrders();
-      }
-    } else {
-      const payload = {
-        supplier: newOrder.value.supplier,
-        shopify_product_id: newOrder.value.itemId,
-        quantity_ordered: Number(newOrder.value.quantity),
-        shop: shop,
-        inventory_item_id: Number(newOrder.value.inventory_item_id),
-      };
-      const response = await axios.post(
-        `${apiUrl}/api/purchase-order`,
-        payload
-      );
-      if (response?.data?.success) {
-        toast(response?.data?.message || "Order created successfully.", {
-          type: "success",
-        });
-        await fetchOrders();
-        variants.value = [];
-      }
-    }
-
-    // Reset form and close modal
-    resetForm();
-    showCreateOrderModal.value = false;
-  } catch (error) {
-    console.error("Error creating purchase order:", error);
-    errorItemMessage.value =
-      error.response?.data?.message ||
-      "Failed to create order. Please try again.";
-  } finally {
-    isSubmitting.value = false;
-  }
 };
 
 const confirmDelete = async () => {
@@ -587,24 +592,13 @@ const confirmDelete = async () => {
   }
 };
 
-// Reset form
-const resetForm = () => {
-  newOrder.value = {
-    supplier: "",
-    itemId: "",
-    quantity: 1,
-    inventory_item_id: "",
-  };
-  errorMessage.value = "";
-};
-
 // Open create order modal
 const onClickNewOrderBtn = async () => {
   isEdit.value = false;
   showCreateOrderModal.value = true;
   resetForm();
   if (items.value.length === 0) {
-    await fetchItems();
+    await fetchProducts();
   }
 };
 
@@ -719,52 +713,6 @@ const openCreateProductModal = (order) => {
   showCreateOrderModal.value = true;
 };
 
-const openReceiveModal = async (order) => {
-  selectedOrder.value = order;
-  receiveQuantity.value = order.quantity_ordered - order.quantity_received;
-  showReceiveModal.value = true;
-
-  if (locations.value.length === 0) {
-    await fetchInventoryLocation();
-  }
-};
-
-const submitReceive = async () => {
-  try {
-    if (receiveQuantity.value <= 0) return;
-
-    isSubmitting.value = true;
-    const response = await axios.post(
-      `${apiUrl}/api/purchase-orders/${selectedOrder.value.id}/receive?shop=${shop}`,
-      {
-        quantity: receiveQuantity.value,
-        location_id: selectedLocation.value,
-      }
-    );
-
-    if (response.data.success) {
-      isSubmitting.value = false;
-
-      toast(response.data.message || "Order received successfully.", {
-        type: "success",
-      });
-      // Update local state
-      const updatedOrder = orders.value.find(
-        (o) => o.id === selectedOrder.value.id
-      );
-
-      updatedOrder.quantity_received += receiveQuantity.value;
-      updatedOrder.status = calculateStatus(updatedOrder);
-      variants.value = [];
-      showReceiveModal.value = false;
-    }
-  } catch (error) {
-    errorMessage.value = "Failed to update order: " + error.message;
-    console.error("Receive error:", error);
-    isSubmitting.value = false;
-  }
-};
-
 const calculateStatus = (order) => {
   if (order.quantity_received >= order.quantity_ordered) return "received";
   if (order.quantity_received > 0) return "Partial";
@@ -777,10 +725,169 @@ watch([() => showReceiveModal, () => showCreateOrderModal], () => {
     fetchOrders();
   }
 });
+const loadVariants = () => {
+  const product = products.value.find((p) => p.id === newOrder.value.productId);
+  if (product) {
+    newOrder.value.variants = product.variants.map((variant) => ({
+      ...variant,
+      quantity_ordered: 0,
+    }));
+  }
+};
 
-// Lifecycle hooks
+const applyBulkQuantity = () => {
+  newOrder.value.variants.forEach((variant) => {
+    variant.quantity_ordered = bulkQuantity.value;
+  });
+};
+
+const createPurchaseOrder = async () => {
+  try {
+    isSubmitting.value = true;
+    errorItemMessage.value = "";
+
+    // Validate form
+    if (!newOrder.value.supplier || !newOrder.value.productId) {
+      errorItemMessage.value = "Supplier and product are required";
+      return;
+    }
+
+    if (!hasSelectedVariants.value) {
+      errorItemMessage.value =
+        "Please enter quantities for at least one variant";
+      return;
+    }
+
+    const payload = {
+      supplier: newOrder.value.supplier,
+      shopify_product_id: newOrder.value.productId,
+      paid: newOrder.value.paid,
+      shop: shop,
+      items: newOrder.value.variants
+        .filter((v) => v.quantity_ordered > 0)
+        .map((variant) => ({
+          inventory_item_id: variant.inventory_item_id,
+          quantity_ordered: variant.quantity_ordered,
+        })),
+    };
+
+    const response = await axios.post(`${apiUrl}/api/purchase-order`, payload);
+
+    if (response?.data?.success) {
+      toast.success(response?.data?.message || "Order created successfully");
+      await fetchOrders();
+      showCreateOrderModal.value = false;
+    }
+  } catch (error) {
+    console.error("Error creating purchase order:", error);
+    errorItemMessage.value =
+      error.response?.data?.message ||
+      "Failed to create order. Please try again.";
+
+    setTimeout(() => {
+      errorItemMessage.value = "";
+    }, 3000);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const openReceiveModal = async (productGroup) => {
+  // Get all orders for this product
+  const productOrders = orders.value.filter(
+    order => order.shopify_product_id === productGroup.shopify_product_id
+  );
+
+  selectedOrder.value = {
+    productId: productGroup.shopify_product_id,
+    productName: selectedProduct(productGroup.shopify_product_id)?.label,
+    items: productOrders.map(order => ({
+      ...order,
+      quantity_to_receive: Math.max(0, order.quantity_ordered - order.quantity_received),
+      variant_name: selectedItem(order.inventory_item_id)?.variant_name || 'Default'
+    }))
+  };
+
+  showReceiveModal.value = true;
+  
+  if (locations.value.length === 0) {
+    await fetchInventoryLocation();
+  }
+};
+
+const submitReceive = async () => {
+  try {
+    isSubmitting.value = true;
+
+    const payload = {
+      location_id: selectedLocation.value,
+      items: selectedOrder.value.items
+        .filter((item) => item.quantity_to_receive > 0)
+        .map((item) => ({
+          inventory_item_id: item.inventory_item_id,
+          quantity: item.quantity_to_receive,
+        })),
+    };
+
+    const response = await axios.post(
+      `${apiUrl}/api/purchase-orders/receive?shop=${shop}`,
+      payload
+    );
+
+    if (response.data.success) {
+      toast.success(response.data.message || "Inventory received successfully");
+      await fetchOrders();
+      showReceiveModal.value = false;
+    }
+  } catch (error) {
+    console.error("Error receiving inventory:", error);
+    toast.error("Failed to receive inventory. Please try again.");
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Fetch products instead of items
+const fetchProducts = async () => {
+  try {
+    loadingItems.value = true;
+    const response = await axios.get(`${apiUrl}/api/products?shop=${shop}`);
+
+    products.value = response?.data?.data || [];
+
+    allProductsItems.value = products.value.flatMap((product) =>
+      product.variants.map((variant) => ({
+        label: product.title,
+        value: variant.id,
+        inventory_item_id: variant.inventory_item_id,
+        barcode: variant.barcode,
+        variant_name: variant.title,
+        shopify_product_id: product.id,
+      }))
+    );
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    errorItemMessage.value = "Failed to load products. Please try again.";
+  } finally {
+    loadingItems.value = false;
+  }
+};
+
+// Reset form
+const resetForm = () => {
+  newOrder.value = {
+    supplier: "",
+    productId: "",
+    paid: false,
+    variants: [],
+  };
+  bulkQuantity.value = 0;
+  errorMessage.value = "";
+};
+
+// Update onMounted to fetch products
 onMounted(() => {
   fetchOrders();
-  fetchItems();
+  fetchProducts(); // Renamed from fetchItems
 });
 </script>
