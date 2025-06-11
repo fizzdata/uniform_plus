@@ -74,6 +74,7 @@ public function update(Request $request)
         
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
+        'paid' => 'boolean',
     ]);
 
     if ($validate->fails()) {
@@ -85,6 +86,7 @@ public function update(Request $request)
         ->update([
             'quantity_ordered' => $request->quantity_ordered,
             'supplier_name' => $request->supplier,
+            'paid' => $request->paid,
             'updated_at' => now(),
         ]);
 
