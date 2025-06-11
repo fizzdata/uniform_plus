@@ -40,16 +40,17 @@
           <h3 class="font-semibold capitalize">
             Product: {{ selectedProduct(supplier)?.label }}
           </h3>
-          <span class="text-gray-500">{{
-            expandedGroups[supplier] ? "−" : "+"
-          }}</span>
-
-          <button
-  @click.stop="openReceiveModal(items)"
-  class="text-gray-600 hover:text-gray-900 cursor-pointer bg-blue-100 px-3 py-1 rounded-md"
->
-  Receive All
-</button>
+          <div class="flex justify-between gap-3 items-center">
+            <button
+              @click.stop="openReceiveModal(items)"
+              class="text-gray-600 hover:text-gray-900 cursor-pointer bg-blue-100 px-3 py-1 rounded-md"
+            >
+              Receive All
+            </button>
+            <span class="text-gray-500 text-2xl">
+              {{ expandedGroups[supplier] ? "−" : "+" }}
+            </span>
+          </div>
         </div>
 
         <!-- Group Body -->
@@ -61,6 +62,7 @@
             <tr>
               <th class="px-4 py-2 text-left">Order ID</th>
               <th class="px-4 py-2 text-left">Supplier</th>
+              <th class="px-4 py-2 text-left">Variant Name</th>
               <th class="px-4 py-2 text-left">Barcode</th>
               <th class="px-4 py-2 text-left">Qty Ordered</th>
               <th class="px-4 py-2 text-left">Qty Received</th>
@@ -73,12 +75,15 @@
           </thead>
           <tbody class="divide-y divide-gray-100 rounded-bl-2xl">
             <tr
-              v-for="item in items.items"
+              v-for="item in items?.items"
               :key="item.id"
               class="hover:bg-gray-50"
             >
               <td class="px-4 py-2">{{ item.id }}</td>
               <td class="px-4 py-2">{{ item.supplier_name }}</td>
+              <td class="px-4 py-2">
+                {{ selectedItem(item.inventory_item_id)?.variant_name }}
+              </td>
               <td class="px-4 py-2">
                 <span v-if="selectedItem(item.inventory_item_id)?.barcode">
                   #{{ selectedItem(item.inventory_item_id)?.barcode }}
@@ -101,13 +106,13 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
-                <button
+                <!-- <button
                   v-tooltip="'Add Recieve'"
                   @click="openReceiveModal(item)"
                   class="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
                   <IconPlusCircle class="text-blue-600" />
-                </button>
+                </button> -->
                 <button
                   v-tooltip="'Edit'"
                   @click="openCreateProductModal(item)"
@@ -155,7 +160,11 @@
     </div>
 
     <!-- Receive Quantity Modal -->
-    <AppDialog v-model="showReceiveModal" title="Receive Inventory">
+    <AppDialog
+      v-model="showReceiveModal"
+      title="Receive Inventory"
+      width="max-w-3xl"
+    >
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700">
           Select Location
@@ -226,7 +235,7 @@
                   type="number"
                   :min="0"
                   :max="item.quantity_ordered - item.quantity_received"
-                  class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  class="shadow-sm focus:ring-indigo-500 p-1 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
               </td>
             </tr>
@@ -244,7 +253,7 @@
         <button
           @click="submitReceive"
           :disabled="isSubmitting || !isValidReceive"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer disabled:bg-indigo-400 disabled:pointer-events-none"
         >
           {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
         </button>
@@ -278,7 +287,7 @@
           <select
             v-model="newOrder.productId"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
-            :disabled="loadingItems"
+            :disabled="loadingItems || isEdit"
             @change="loadVariants"
           >
             <option value="">Select a product</option>
@@ -313,7 +322,7 @@
                 <th
                   class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  <div class="flex items-center">
+                  <div v-if="!isEdit" class="flex items-center">
                     <span>Bulk Set</span>
                     <input
                       v-model.number="bulkQuantity"
@@ -362,7 +371,7 @@
         </div>
 
         <!-- Paid or unpaid toggle -->
-        <div>
+        <div v-if="!isEdit">
           <label class="block text-sm font-medium text-gray-700">Paid </label>
           <div class="mt-1 relative flex items-center">
             <Switch
@@ -508,8 +517,6 @@ const groupedOrders = computed(() => {
   return result;
 });
 
-console.log("groupedOrders", groupedOrders);
-
 // New order form
 const newOrder = ref({
   supplier: "",
@@ -597,9 +604,6 @@ const onClickNewOrderBtn = async () => {
   isEdit.value = false;
   showCreateOrderModal.value = true;
   resetForm();
-  if (items.value.length === 0) {
-    await fetchProducts();
-  }
 };
 
 // Computed properties
@@ -689,24 +693,29 @@ const openCreateProductModal = (order) => {
   if (!order) return;
 
   selectRecord.value = order;
-
   isEdit.value = true;
 
-  const matchingItem = items.value.find(
-    (item) => Number(item.value) === Number(order.shopify_product_id)
+  const product = products.value.find((p) => p.id === order.shopify_product_id);
+
+  const variants = [];
+
+  const variant = product.variants.find(
+    (item) => item.inventory_item_id === order.inventory_item_id
   );
 
-  if (matchingItem?.variants) {
-    variants.value = matchingItem.variants;
+  if (variant) {
+    variants.push({
+      ...variant,
+      quantity_ordered: order.quantity_ordered,
+    });
   }
 
   // Create a new object with the updated values
   newOrder.value = {
     ...newOrder.value, // Keep existing properties
     supplier: order.supplier_name || "",
-    itemId: order.shopify_product_id || "",
-    quantity: order.quantity_ordered || 0,
-    inventory_item_id: order.inventory_item_id,
+    productId: order.shopify_product_id || "",
+    variants: variants,
     paid: order.paid,
   };
 
@@ -758,25 +767,52 @@ const createPurchaseOrder = async () => {
       return;
     }
 
-    const payload = {
-      supplier: newOrder.value.supplier,
-      shopify_product_id: newOrder.value.productId,
-      paid: newOrder.value.paid,
-      shop: shop,
-      items: newOrder.value.variants
-        .filter((v) => v.quantity_ordered > 0)
-        .map((variant) => ({
-          inventory_item_id: variant.inventory_item_id,
-          quantity_ordered: variant.quantity_ordered,
-        })),
-    };
+    if (isEdit.value) {
+      const payload = {
+        supplier: newOrder.value.supplier,
+        quantity_ordered: Number(newOrder.value.variants[0]?.quantity_ordered),
+        // paid: newOrder.value.paid, // will be true only if explicitly 'true'
+        shop: shop,
+      };
 
-    const response = await axios.post(`${apiUrl}/api/purchase-order`, payload);
+      // TODO: Replace with your actual edit API endpoint
+      const response = await axios.post(
+        `${apiUrl}/api/purchase-orders/${selectRecord.value.id}/update`,
+        payload
+      );
 
-    if (response?.data?.success) {
-      toast.success(response?.data?.message || "Order created successfully");
-      await fetchOrders();
-      showCreateOrderModal.value = false;
+      if (response?.data?.success) {
+        toast(response?.data?.message || "Order updated successfully.", {
+          type: "success",
+        });
+        await fetchOrders();
+        isEdit.value = false;
+        showCreateOrderModal.value = false;
+      }
+    } else {
+      const payload = {
+        supplier: newOrder.value.supplier,
+        shopify_product_id: newOrder.value.productId,
+        paid: newOrder.value.paid,
+        shop: shop,
+        items: newOrder.value.variants
+          .filter((v) => v.quantity_ordered > 0)
+          .map((variant) => ({
+            inventory_item_id: variant.inventory_item_id,
+            quantity_ordered: variant.quantity_ordered,
+          })),
+      };
+
+      const response = await axios.post(
+        `${apiUrl}/api/purchase-order`,
+        payload
+      );
+
+      if (response?.data?.success) {
+        toast.success(response?.data?.message || "Order created successfully");
+        await fetchOrders();
+        showCreateOrderModal.value = false;
+      }
     }
   } catch (error) {
     console.error("Error creating purchase order:", error);
@@ -795,21 +831,25 @@ const createPurchaseOrder = async () => {
 const openReceiveModal = async (productGroup) => {
   // Get all orders for this product
   const productOrders = orders.value.filter(
-    order => order.shopify_product_id === productGroup.shopify_product_id
+    (order) => order.shopify_product_id === productGroup.shopify_product_id
   );
 
   selectedOrder.value = {
     productId: productGroup.shopify_product_id,
     productName: selectedProduct(productGroup.shopify_product_id)?.label,
-    items: productOrders.map(order => ({
+    items: productOrders.map((order) => ({
       ...order,
-      quantity_to_receive: Math.max(0, order.quantity_ordered - order.quantity_received),
-      variant_name: selectedItem(order.inventory_item_id)?.variant_name || 'Default'
-    }))
+      quantity_to_receive: Math.max(
+        0,
+        order.quantity_ordered - order.quantity_received
+      ),
+      variant_name:
+        selectedItem(order.inventory_item_id)?.variant_name || "Default",
+    })),
   };
 
   showReceiveModal.value = true;
-  
+
   if (locations.value.length === 0) {
     await fetchInventoryLocation();
   }
@@ -818,6 +858,12 @@ const openReceiveModal = async (productGroup) => {
 const submitReceive = async () => {
   try {
     isSubmitting.value = true;
+
+    // Basic validation
+    if (!selectedLocation.value) {
+      errorItemMessage.value = "Please select your location.";
+      return;
+    }
 
     const payload = {
       location_id: selectedLocation.value,
