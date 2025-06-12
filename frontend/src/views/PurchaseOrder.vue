@@ -42,7 +42,7 @@
           </h3>
           <div class="flex justify-between gap-3 items-center">
             <button
-              @click.stop="openReceiveModal(items)"
+              @click.stop="openReceiveModal(items, false)"
               class="text-gray-600 hover:text-gray-900 cursor-pointer bg-blue-100 px-3 py-1 rounded-md"
             >
               Receive All
@@ -106,13 +106,13 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
-                <!-- <button
+                <button
                   v-tooltip="'Add Recieve'"
-                  @click="openReceiveModal(item)"
+                  @click="openReceiveModal(item, true)"
                   class="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
                   <IconPlusCircle class="text-blue-600" />
-                </button> -->
+                </button>
                 <button
                   v-tooltip="'Edit'"
                   @click="openCreateProductModal(item)"
@@ -346,8 +346,8 @@
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                   {{ variant.title }}
                   <span v-if="variant.barcode" class="text-gray-400 ml-2"
-                    >#{{ variant.barcode }}</span
-                  >
+                    >#{{ variant.barcode }}
+                  </span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <input
@@ -371,7 +371,7 @@
         </div>
 
         <!-- Paid or unpaid toggle -->
-        <div v-if="!isEdit">
+        <div>
           <label class="block text-sm font-medium text-gray-700">Paid </label>
           <div class="mt-1 relative flex items-center">
             <Switch
@@ -468,7 +468,6 @@ const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
 const itemsPerPage = ref(20);
-const receiveQuantity = ref(0);
 const showReceiveModal = ref(false);
 const showCreateOrderModal = ref(false);
 const products = ref([]); // Renamed from items
@@ -771,7 +770,7 @@ const createPurchaseOrder = async () => {
       const payload = {
         supplier: newOrder.value.supplier,
         quantity_ordered: Number(newOrder.value.variants[0]?.quantity_ordered),
-        // paid: newOrder.value.paid, // will be true only if explicitly 'true'
+        paid: newOrder.value.paid, // will be true only if explicitly 'true'
         shop: shop,
       };
 
@@ -828,25 +827,45 @@ const createPurchaseOrder = async () => {
   }
 };
 
-const openReceiveModal = async (productGroup) => {
-  // Get all orders for this product
-  const productOrders = orders.value.filter(
-    (order) => order.shopify_product_id === productGroup.shopify_product_id
-  );
+const openReceiveModal = async (productGroup, isSingle) => {
+  if (isSingle) {
+    const productOrders = orders.value.filter(
+      (order) => order.id === productGroup.id
+    );
 
-  selectedOrder.value = {
-    productId: productGroup.shopify_product_id,
-    productName: selectedProduct(productGroup.shopify_product_id)?.label,
-    items: productOrders.map((order) => ({
-      ...order,
-      quantity_to_receive: Math.max(
-        0,
-        order.quantity_ordered - order.quantity_received
-      ),
-      variant_name:
-        selectedItem(order.inventory_item_id)?.variant_name || "Default",
-    })),
-  };
+    selectedOrder.value = {
+      productId: productGroup.shopify_product_id,
+      productName: selectedProduct(productGroup.shopify_product_id)?.label,
+      items: productOrders.map((order) => ({
+        ...order,
+        quantity_to_receive: Math.max(
+          0,
+          order.quantity_ordered - order.quantity_received
+        ),
+        variant_name:
+          selectedItem(order.inventory_item_id)?.variant_name || "Default",
+      })),
+    };
+  } else {
+    // Get all orders for this product
+    const productOrders = orders.value.filter(
+      (order) => order.shopify_product_id === productGroup.shopify_product_id
+    );
+
+    selectedOrder.value = {
+      productId: productGroup.shopify_product_id,
+      productName: selectedProduct(productGroup.shopify_product_id)?.label,
+      items: productOrders.map((order) => ({
+        ...order,
+        quantity_to_receive: Math.max(
+          0,
+          order.quantity_ordered - order.quantity_received
+        ),
+        variant_name:
+          selectedItem(order.inventory_item_id)?.variant_name || "Default",
+      })),
+    };
+  }
 
   showReceiveModal.value = true;
 
