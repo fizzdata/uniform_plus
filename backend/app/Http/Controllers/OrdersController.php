@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Shopify;
 use Illuminate\Support\Facades\Http;
 
 
@@ -14,22 +15,11 @@ class OrdersController extends Controller
 {
      public function index(Request $request){
 
+        $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
 
     // Fetch orders from Shopify
-    $response = Http::withHeaders([
-        'X-Shopify-Access-Token' => $request->shop['access_token'],
-    ])->get("https://{$request->shop['shop_domain']}/admin/api/2024-10/orders.json?status=any");
+    $orders = $shop->get_orders(); 
 
-        if ($response->failed()) {
-                Log::error('Shopify API error', [
-                    'shop' => $request->shop['shop_domain'],
-                    'status' => $response->status(),
-                    'response' => $response->json(),
-    ]);
-            return response()->json(['error' => 'Failed to fetch orders', 'details' => $response->json()], $response->status());
-        } 
-
-    $orders = $response->json()['orders'];
 
 
     //$orders = Orders::demo();

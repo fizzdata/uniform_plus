@@ -11,14 +11,22 @@ use App\Models\Shopify;
 
 class TestController extends Controller
 {
-    public function index(Request $request){
+     public function index(Request $request){
 
       
     $shop = new Shopify(1); // Assuming shop_id is 1 for testing
     try {
             $products = $shop->get_products();
-            $inventory_levels = $shop->get_inventory_levels();
+
+            $inventoryItemIds = collect($products)->flatMap(function ($product) {
+            return collect($product['variants'])->pluck('inventory_item_id');
+            })->toArray();
+            
+            $inventory_levels = $shop->get_inventory_levels($inventoryItemIds);
             $locations = $shop->get_locations();
+
+            //$adjust = $shop->adjust_inventory_level($inventoryItemIds[0], $locations[0]['id'],20);
+
 
             return response()->json([
                 'products' => $products,
