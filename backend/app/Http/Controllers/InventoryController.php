@@ -6,19 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
-use App\Helpers\ShopifyInventoryHelper;
 use App\Models\Inventory;
 use App\Models\Shopify;
 
 class InventoryController extends Controller
 {
-    protected $shopifyService;
-
-    public function __construct(ShopifyInventoryHelper $shopifyService)
-    {
-        $this->shopifyService = $shopifyService;
-    }
-
+   
    public function getInventory(Request $request)
     {
         //return response()->json(Inventory::demo());
@@ -55,44 +48,7 @@ try {
 
     }
 
-    // public function receiveItems(Request $request)
-    // {
-
-    //      $validated = $request->validate([
-    //         'shopify_item_id' => 'required|string',
-    //         'shopify_location_id' => 'required|string',
-    //         'quantity' => 'required|integer|min:1',
-
-    //     ]);
-
-
-    //     // Update Shopify inventory
-    //     $response = ShopifyInventoryHelper::adjustInventory(
-    //         $request->shop_domain,
-    //         $request->access_token,
-    //         $validated['shopify_item_id'],
-    //         $validated['shopify_location_id'],
-    //         $validated['quantity'],
-
-    //     );
-
-    //     // Record action using Query Builder
-    //     DB::table('inventory_actions')->insert([
-    //         'shopify_item_id' => $validated['shopify_item_id'],
-    //         'shopify_location_id_to' => $validated['shopify_location_id'],
-    //         'quantity' => $validated['quantity'],
-    //         'action_type' => 'RECEIVE',
-    //         'performed_at' => now(),
-    //         'created_at' => now(),
-    //         'updated_at' => now()
-    //     ]);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $response
-    //     ]);
-    // }
-
+ 
     public function transferItems(Request $request)
     {
         $validated = $request->validate([
