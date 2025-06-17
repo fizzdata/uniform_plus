@@ -156,7 +156,7 @@ public function receive(Request $request)
             'shopify_location_id_from' => null,
             'shopify_location_id_to' => $request->location_id,
             'quantity' => $item['quantity'],
-            'action_type' => 'RECEIVE',
+            'action_type' => 'Add',
             'performed_at' => now(),
             'created_at' => now(),
             'updated_at' => now()
