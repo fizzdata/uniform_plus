@@ -29,23 +29,28 @@ class Shopify extends Model
         return $response->json()['products'];
     }
 
-    public function get_inventory_levels($inventory_item_ids = null, $limit = 250){
-        $params = [];
-        if ($inventory_item_ids) {
-            $params['inventory_item_ids'] = implode(',', $inventory_item_ids);
-        }
-        $params['limit'] = $limit;
+    public function get_inventory_levels($inventory_item_ids = [], $limit = 250) {
+    $params = ['limit' => $limit];
+    $inventory_levels = [];
+
+    $chunks = array_chunk($inventory_item_ids, 100); // Shopify might handle smaller batches better
+
+    foreach ($chunks as $chunk) {
+        $params['inventory_item_ids'] = implode(',', $chunk);
 
         $response = Http::withHeaders([
             'X-Shopify-Access-Token' => $this->access_token,
         ])->get("https://{$this->shop_domain}/admin/api/2024-10/inventory_levels.json", $params);
 
-        if ($response->failed()):
+        if ($response->failed()) {
             throw new \Exception("Failed to get Shopify inventory levels");
-        endif;
+        }
 
-        return $response->json()['inventory_levels'];
+        $inventory_levels = array_merge($inventory_levels, $response->json()['inventory_levels']);
     }
+
+    return $inventory_levels;
+}
 
     public function get_locations($fields = 'id,name', $limit = 250){
         $response = Http::withHeaders([
@@ -92,7 +97,7 @@ class Shopify extends Model
         return $connect->json();
     }
 
-    public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price', $limit = 250){
+    public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price,order_status_url', $limit = 250){
         $response = Http::withHeaders([
             'X-Shopify-Access-Token' => $this->access_token,
         ])->get("https://{$this->shop_domain}/admin/api/2024-10/orders.json", [

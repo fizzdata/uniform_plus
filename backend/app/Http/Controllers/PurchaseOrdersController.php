@@ -74,17 +74,21 @@ public function update(Request $request)
         
         'quantity_ordered' => 'required|integer|min:1',
         'supplier' => 'required|string|max:255',
+        'paid' => 'boolean',
     ]);
 
     if ($validate->fails()) {
         return response()->json(['error' => $validate->errors()], 422);
     }
 
+    $paid = ($request->paid === 'true' || $request->paid === true) ? true : false;
+
     DB::table('purchase_orders')
         ->where('id', $request->order_id)
         ->update([
             'quantity_ordered' => $request->quantity_ordered,
             'supplier_name' => $request->supplier,
+            'paid' =>  $paid,
             'updated_at' => now(),
         ]);
 
@@ -128,17 +132,10 @@ public function receive(Request $request)
 
          // Connect inventory item to location if not already connected
 
+         $shop = new \App\Models\Shopify($request->shop['id']);
+
        if($order->quantity_received < 1):
-            $connect = Http::withHeaders([
-                        'X-Shopify-Access-Token' => $request->shop['access_token'],
-                    ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/connect.json", [
-                        'location_id' => $request->location_id,          // From step 1
-                        'inventory_item_id' => $order->inventory_item_id,   
-                    ]); 
-                    // Abort if connection fails
-        if ($connect->failed()) {
-            throw new \Exception("Failed to connect inventory item to location.");
-        }   
+          $connect = $shop->connect($request->location_id, $order->inventory_item_id);
         endif;
 
         DB::table('purchase_orders')
@@ -150,19 +147,21 @@ public function receive(Request $request)
                 'received_at' => now()
             ]);
         
-            
-        $adjustmentResponse = Http::withHeaders([
-            'X-Shopify-Access-Token' => $request->shop['access_token'],
-        ])->post("https://{$request->shop['shop_domain']}/admin/api/2024-10/inventory_levels/adjust.json", [
-            'location_id' => $request->location_id,          // From step 1
-            'inventory_item_id' => $order->inventory_item_id,   
-            'available_adjustment' => + $item['quantity']
+        $adjust = $shop->adjust_inventory_level($order->inventory_item_id, $request->location_id, $item['quantity']);   
+        
+        DB::table('inventory_actions')
+        ->insert([
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $order->inventory_item_id,
+            'shopify_location_id_from' => null,
+            'shopify_location_id_to' => $request->location_id,
+            'quantity' => $item['quantity'],
+            'action_type' => 'Add',
+            'performed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
         ]);
-
-            // Abort if inventory update fails
-    if ($adjustmentResponse->failed()) {
-        throw new \Exception("Failed to update Shopify inventory.");
-    }
+        
 endforeach;
 
 
