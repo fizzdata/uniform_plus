@@ -173,6 +173,7 @@
           v-model="selectedLocation"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-2"
           :disabled="loadingLocations"
+          @change="locationError = ''"
         >
           <option value="">Select a location</option>
           <option v-for="item in locations" :key="item.id" :value="item.value">
@@ -243,6 +244,10 @@
         </table>
       </div>
 
+      <p v-if="locationError" class="mt-1 text-sm text-red-600">
+        {{ locationError }}
+      </p>
+
       <template #actions="{ close }">
         <button
           @click="close"
@@ -252,7 +257,7 @@
         </button>
         <button
           @click="submitReceive"
-          :disabled="isSubmitting || !isValidReceive"
+          :disabled="isSubmitting"
           class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer disabled:bg-indigo-400 disabled:pointer-events-none"
         >
           {{ isSubmitting ? "Confirm Receive..." : "Confirm Receive" }}
@@ -487,6 +492,7 @@ const variants = ref([]);
 const allProductsItems = ref([]);
 const showDeleteModal = ref(false);
 const selectRecord = ref("");
+const locationError = ref("");
 
 // Handle group expand/collapse state
 const expandedGroups = ref({});
@@ -878,9 +884,28 @@ const submitReceive = async () => {
   try {
     isSubmitting.value = true;
 
-    // Basic validation
+    locationError.value = ""; // Reset error message
+
+    // Validate location
     if (!selectedLocation.value) {
-      errorItemMessage.value = "Please select your location.";
+      locationError.value = "Please select a location";
+      isSubmitting.value = false;
+      return;
+    }
+
+    // Validate quantities
+    const invalidItems = selectedOrder.value.items.filter((item) => {
+      const maxAllowed = item.quantity_ordered - item.quantity_received;
+      return (
+        item.quantity_to_receive > 0 && item.quantity_to_receive > maxAllowed
+      );
+    });
+
+    if (invalidItems.length > 0) {
+      locationError.value(
+        "One or more items have invalid quantities. Please check the values and try again."
+      );
+      isSubmitting.value = false;
       return;
     }
 
@@ -903,12 +928,15 @@ const submitReceive = async () => {
       toast.success(response.data.message || "Inventory received successfully");
       await fetchOrders();
       showReceiveModal.value = false;
+      isSubmitting.value = false;
+      locationError.value = ""; // Reset error message
     }
   } catch (error) {
     console.error("Error receiving inventory:", error);
     toast.error("Failed to receive inventory. Please try again.");
   } finally {
     isSubmitting.value = false;
+    locationError.value = ""; // Reset error message
   }
 };
 
