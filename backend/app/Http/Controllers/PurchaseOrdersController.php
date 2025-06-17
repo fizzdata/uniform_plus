@@ -81,12 +81,14 @@ public function update(Request $request)
         return response()->json(['error' => $validate->errors()], 422);
     }
 
+    $paid = ($request->paid === 'true' || $request->paid === true) ? true : false;
+
     DB::table('purchase_orders')
         ->where('id', $request->order_id)
         ->update([
             'quantity_ordered' => $request->quantity_ordered,
             'supplier_name' => $request->supplier,
-            'paid' => $request->paid,
+            'paid' =>  $paid,
             'updated_at' => now(),
         ]);
 
