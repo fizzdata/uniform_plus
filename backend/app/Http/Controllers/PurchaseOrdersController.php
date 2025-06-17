@@ -147,7 +147,20 @@ public function receive(Request $request)
                 'received_at' => now()
             ]);
         
-        $adjust = $shop->adjust_inventory_level($order->inventory_item_id, $request->location_id, $item['quantity']);    
+        $adjust = $shop->adjust_inventory_level($order->inventory_item_id, $request->location_id, $item['quantity']);   
+        
+        DB::table('inventory_actions')
+        ->insert([
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $order->inventory_item_id,
+            'shopify_location_id_from' => null,
+            'shopify_location_id_to' => $request->location_id,
+            'quantity' => $item['quantity'],
+            'action_type' => 'RECEIVE',
+            'performed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
         
 endforeach;
 
