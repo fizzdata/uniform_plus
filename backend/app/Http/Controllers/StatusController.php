@@ -16,8 +16,8 @@ class StatusController extends Controller
         // Get all statuses
 
     $statuses = DB::table('statuses')
-            ->select('id', 'name', 'color', 'description')
-            ->orderBy('id')
+            ->select('s_id', 'name', 'color', 'description')
+            ->orderBy('s_id')
             ->get();
 
         // Return the statuses as a JSON response
@@ -30,7 +30,7 @@ class StatusController extends Controller
     {
         $request->validate([
             'order_id' => 'required|integer',
-            'next_status' => 'required|integer',
+            'direction' => 'required|in:next,previous',
         ]);
       try{
 

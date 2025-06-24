@@ -57,29 +57,34 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ formatDate(order.created_at) }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
-                  <button 
-                    @click="updateOrderStatus(order, 'previous')"
-                    class="text-gray-500 hover:text-gray-700"
-                    :disabled="isFirstStatus(order.status_id)"
-                  >
-                    &larr;
-                  </button>
-                  <span 
-                  :title="getStatusDisplay(order.status_id).description"
-                  :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusDisplay(order.status_id)?.color} text-white`">
-                      {{ getStatusDisplay(order.status_id)?.name }}
-                  </span>
-                  <button 
-                    v-if="getNextStatus(order.status_id) !== 'Final status reached'" 
-                    @click="updateOrderStatus(order, 'next')" 
-                    style="font-size: 8px; padding: 2px; border-radius: 0.375rem; line-height:8px; border: 1px solid grey;" 
-                >
-                    Move to →<br>{{ getNextStatus(order.status_id) }}?
-                </button>
-                </div>
-              </td>
+ <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center space-x-2">
+      <button 
+        @click="moveToPreviousStatus(order)"
+        class="text-gray-500 hover:text-gray-700"
+        :disabled="!hasPreviousStatus(order)"
+      >
+        &larr;
+      </button>
+      
+      <span 
+        :title="getStatusDisplay(order.status_id).description"
+        :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusDisplay(order.status_id)?.color} text-white`"
+      >
+        {{ getStatusDisplay(order.status_id)?.name }}
+      </span>
+
+      <!-- Single next status button -->
+      <button 
+        v-if="order.next_status_id"
+        @click="moveToNextStatus(order)"
+        class="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
+      >
+        Move to {{ getStatusName(order.next_status_id) }} →
+      </button>
+    </div>
+  </td>
+
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${{ order.amount }}
               </td>
@@ -156,31 +161,7 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-const updateOrderStatus = async (order, direction) => {
-    const currentIndex = statuses.value.findIndex(s => s.id === order.status_id);
-    const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-    const nextStatus = statuses.value[nextIndex] || statuses.value[currentIndex]; // Prevent invalid updates
 
-    try {
-        const response = await fetch(`${apiUrl}/api/orders/update-status/${order.id}?shop=${shop}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-            // body: JSON.stringify({ status_id: nextStatus.id }), // If needed for update
-        });
-
-        if (response.ok) {
-            // **Update local state instantly**
-            order.status_id = nextStatus.id; 
-            showMessage(`Status updated to "${nextStatus.name}"`, 'success'); 
-        } else {
-            console.error('Error updating status:', await response.json());
-            showMessage('Failed to update order status. Please try again.', 'error');
-        }
-    } catch (error) {
-        console.error('Request failed:', error);
-        showMessage('Network error. Please check your connection.', 'error');
-    }
-};
 
 // **Notification function**
 const showMessage = (msg, type) => {
@@ -221,6 +202,91 @@ onMounted(() => {
   fetchOrders();
 });
 
+const workflow = ref({}); // Stores all possible workflows
+const showNextOptions = ref({}); // Tracks dropdown visibility per order
+
+// Fetch workflows on mount
+const fetchWorkflows = async () => {
+  try {
+    const response = await fetch(`${apiUrl}/api/workflows?shop=${shop}`);
+    workflow.value = await response.json();
+  } catch (error) {
+    console.error('Error fetching workflows:', error);
+  }
+};
+
+// Initialize workflow path for new orders
+const initWorkflowPath = (order) => {
+  if (!order.workflow_path) {
+    order.workflow_path = [order.status_id];
+  }
+};
+
+// Get available next statuses for an order
+const getNextStatuses = (order) => {
+  initWorkflowPath(order);
+  const currentStatus = order.status_id;
+  const possibleNext = workflow.value[currentStatus] || [];
+  
+  return possibleNext
+    .map(id => statuses.value.find(s => s.id === id))
+    .filter(Boolean);
+};
+
+// Check if previous status exists
+const hasPreviousStatus = (order) => {
+  initWorkflowPath(order);
+  return order.workflow_path.length > 1;
+};
+
+// Move to next status handler
+const moveToNextStatus = async (order, nextStatus) => {
+  showNextOptions.value[order.id] = false; // Close dropdown
+  
+  // Update workflow path
+  order.workflow_path.push(nextStatus.id);
+  order.status_id = nextStatus.id;
+  
+  // Send update to server
+  try {
+    await fetch(`${apiUrl}/api/orders/update-status/${order.id}?shop=${shop}&status_id=${nextStatus.id}`, {
+      method: 'POST'
+    });
+  } catch (error) {
+    console.error('Update failed:', error);
+    // Revert on error
+    order.workflow_path.pop();
+    order.status_id = order.workflow_path.slice(-1)[0];
+  }
+};
+
+// Update status (now handles previous moves)
+const updateOrderStatus = async (order, direction) => {
+  initWorkflowPath(order);
+  
+  if (direction === 'previous' && hasPreviousStatus(order)) {
+    // Move back in workflow path
+    order.workflow_path.pop();
+    const prevStatusId = order.workflow_path.slice(-1)[0];
+    order.status_id = prevStatusId;
+    
+    try {
+      await fetch(`${apiUrl}/api/orders/update-status/${order.id}?shop=${shop}&status_id=${prevStatusId}`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error('Revert failed:', error);
+      // Restore current status on error
+      order.workflow_path.push(order.status_id);
+    }
+  }
+};
+
+onMounted(() => {
+  fetchStatuses();
+  fetchWorkflows(); // Fetch workflow definitions
+  fetchOrders();
+});
 
 </script>
 

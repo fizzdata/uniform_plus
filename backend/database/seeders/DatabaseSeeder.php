@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             OrderStatusSeeder::class,
-            StatusTransitionSeeder::class,
+         //   StatusTransitionSeeder::class,
         ]);
     }
 }
