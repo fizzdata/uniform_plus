@@ -66,7 +66,7 @@ class OrderStatusSeeder extends Seeder
 
         foreach ($statuses as $s) {
             DB::table('statuses')->insert([
-                'id' => $s['s_id'],
+                's_id' => $s['s_id'],
                 'name' => $s['name'],
                 'description' => $s['description'],
                 'color' => $s['color'],
