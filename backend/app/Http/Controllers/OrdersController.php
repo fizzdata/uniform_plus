@@ -32,24 +32,28 @@ class OrdersController extends Controller
 
 
      // Step 2: Fetch latest status for each order using Query Builder
-$orderStatuses = DB::table('orders')
+    $orderStatuses = DB::table('orders')
     ->join('statuses', 'orders.status_id', '=', 'statuses.id')
     ->select('orders.shopify_order_id', 'orders.status_id')
-    ->pluck('orders.status_id', 'orders.shopify_order_id'); // Creates associative array
-
+        ->get()
+        ->pluck('status_id', 'shopify_order_id') // Creates associative array
+        ->toArray();
     // Step 3: Match orders with status & format response
     $formattedOrders = [];
 
     foreach ($orders as $order):
         $OrderId = (string) $order['name'];
-        $shopifyOrderId = (string) $order['name'];
+        $shopifyOrderId = (string) $order['id'];
          // Ensure ID format consistency
 
         $customerName = isset($order['customer']) ? "{$order['customer']['first_name']} {$order['customer']['last_name']}" : 'Guest Checkout';
 
-
-        $Status_id = Status::assign($order);
-        
+        // Check if the order is NOT in the existing statuses list
+    if (!array_key_exists($shopifyOrderId, $orderStatuses)):
+        $Status_id = Status::assign($order); // Assign new status
+    else:
+        $Status_id = $orderStatuses[$shopifyOrderId]; // Get existing status
+    endif;
 
         $formattedOrders[] = [
             'id' => $OrderId,

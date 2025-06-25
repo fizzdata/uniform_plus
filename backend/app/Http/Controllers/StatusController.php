@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Orders;
+use App\Models\Shopify;
 
 class StatusController extends Controller
 {
@@ -77,8 +78,16 @@ class StatusController extends Controller
             //'user_id' => auth()->id(),
             'changed_at' => now(),
         ]);
+    
 
         DB::commit();
+
+        $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
+
+        // Update the order status in Shopify
+        $shop->set_order_status($request->order_id, $nextStatus);
+
+        
         return response()->json(['success' => true, 'message' => 'Status updated successfully'], 200);
 
     } catch (\Exception $e) {
