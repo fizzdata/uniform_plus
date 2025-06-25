@@ -20,7 +20,7 @@ class Status extends Model
 
 
     // Default fallback group
-    $group = 0;
+    $group = 1;
 
     // Extract and normalize data
     $financial = $order['financial_status'] ?? '';
