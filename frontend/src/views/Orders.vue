@@ -270,7 +270,7 @@ const updateOrderStatus = async (order, newStatusId) => {
   order.status_id = newStatusId;
   
   try {
-    await fetch(`${apiUrl}/api/orders/update-status/${order.id}`, {
+    await fetch(`${apiUrl}/api/orders/update-status/${order.shopify_order_id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -278,7 +278,7 @@ const updateOrderStatus = async (order, newStatusId) => {
       body: JSON.stringify({
         shop,
         direction: newStatusId > originalStatus ? 'next' : 'previous',
-        new_status_id: newStatusId
+        currentStatus: originalStatus
       })
     });
     showMessage('Status updated successfully!', 'success');

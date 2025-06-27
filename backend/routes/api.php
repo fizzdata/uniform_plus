@@ -12,8 +12,6 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PurchaseOrdersController;
 
-Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
-Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
 
 
 Route::middleware(VerifyShop::class)->group(function () {
@@ -23,7 +21,9 @@ Route::get('/shopify/install', function (Request $request) {
 })->name('shopify.install');
 
 
-Route::get('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
+Route::post('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
+Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
+Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 

@@ -30,7 +30,6 @@ class StatusController extends Controller
  public function updateStatus(Request $request)
     {
         $request->validate([
-            'order_id' => 'required|integer',
             'direction' => 'required|in:next,previous',
             'currentStatus' => 'required|integer',
         ]);
