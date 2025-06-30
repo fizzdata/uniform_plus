@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('shopify_order_id')->unique();
-            $table->foreignId('status_id')->constrained('statuses')->default(1);
+            $table->foreignId('status_id')->constrained('statuses')->onDelete('restrict');
             $table->string('customer_name')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('currency')->default('USD');
