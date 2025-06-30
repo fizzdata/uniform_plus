@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->unsignedBigInteger('shop_id')->nullable(); // Optional shop association
+            $table->integer('s_id')->unique(); // Unique status ID
+            $table->string('name');
             $table->string('description')->nullable();
             $table->string('color'); // Default color for the status
             $table->timestamps();
@@ -25,8 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('statuses', function (Blueprint $table) {
-            //
-        });
+    Schema::dropIfExists('statuses');            //
+       
     }
 };

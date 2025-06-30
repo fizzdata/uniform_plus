@@ -20,9 +20,9 @@ Route::get('/shopify/install', function (Request $request) {
     return response()->json(['success' => true, 'shop' => $request->shop]);
 })->name('shopify.install');
 
-Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
 
-Route::get('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
+Route::post('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
+Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
 Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
