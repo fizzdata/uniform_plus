@@ -53,9 +53,9 @@ class StatusController extends Controller
         $nextStatus = ($request->direction == 'next' ? $currentStatus + 1 : $currentStatus - 1);    
 
             // check if next is allowed status
-        $nextStatusExist = DB::table('status')
+        $nextStatusExist = DB::table('statuses')
             ->where('s_id', $nextStatus)
-            ->exists();
+            ->first();
 
             // Check if the requested status is valid
         if (!$nextStatusExist) {
@@ -84,7 +84,7 @@ class StatusController extends Controller
         $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
 
         // Update the order status in Shopify
-        $shop->set_order_status($request->order_id, $nextStatus);
+        $shop->set_order_status($request->order_id, $nextStatusExist->name);
 
         
         return response()->json(['success' => true, 'message' => 'Status updated successfully'], 200);
