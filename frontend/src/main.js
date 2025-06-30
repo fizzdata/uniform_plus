@@ -1,9 +1,8 @@
-import "./assets/main.css";
-
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import "@shopify/polaris/build/esm/styles.css";
+import "./assets/main.css";
 import Vue3Toastify from "vue3-toastify";
 import "vue3-toastify/dist/index.css"; // Make sure Toastify styles are loaded
 import {
