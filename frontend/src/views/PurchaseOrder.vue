@@ -671,7 +671,7 @@ const fetchInventoryLocation = async () => {
 };
 
 // Methods
-const fetchOrders = async (page = 21) => {
+const fetchOrders = async (page = 1) => {
   try {
     loading.value = true;
     const response = await axios.get(
