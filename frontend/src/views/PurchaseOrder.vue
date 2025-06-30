@@ -132,6 +132,11 @@
           </tbody>
         </table>
       </div>
+      <div v-if="!Object.keys(groupedOrders).length">
+        <h4 class="text-center italic">
+          No orders to show. Please create a new order.
+        </h4>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -472,7 +477,7 @@ const errorMessage = ref("");
 const errorItemMessage = ref("");
 const currentPage = ref(1);
 const totalOrders = ref(0);
-const itemsPerPage = ref(20);
+const itemsPerPage = ref(500);
 const showReceiveModal = ref(false);
 const showCreateOrderModal = ref(false);
 const products = ref([]); // Renamed from items
@@ -666,7 +671,7 @@ const fetchInventoryLocation = async () => {
 };
 
 // Methods
-const fetchOrders = async (page = 1) => {
+const fetchOrders = async (page = 21) => {
   try {
     loading.value = true;
     const response = await axios.get(
