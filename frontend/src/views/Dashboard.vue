@@ -37,13 +37,11 @@ const installApp = async (shopName) => {
 
     const data = await response.json();
 
-    localStorage.setItem("shop_name", shopName); // Save shop name
-
     if (data.success) {
-      // Already on dashboard, no need to redirect again
+      localStorage.setItem("shop_name", shopName); // Save only if valid
       console.log("Shop verified successfully.");
     } else {
-      // Redirect to Shopify authorization
+      // Not valid – redirect to Shopify auth
       window.location.href = `${apiUrl}/auth/shopify?shop=${shopName}`;
     }
   } catch (error) {
