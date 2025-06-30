@@ -84,7 +84,7 @@ class StatusController extends Controller
         $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
 
         // Update the order status in Shopify
-        $shop->set_order_status($request->order_id, $nextStatusExist->name);
+        $shop->set_order_status($request->order_id, $nextStatusExist);
 
         
         return response()->json(['success' => true, 'message' => 'Status updated successfully'], 200);

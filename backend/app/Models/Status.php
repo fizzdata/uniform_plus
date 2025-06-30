@@ -40,7 +40,13 @@ class Status extends Model
         default => 9, // Unknown source
     };
 
-    $financialCode = $financial === 'paid' ? 1 : 9;
+    $financialCode = match ($financial) {
+        'paid' => 1,
+        'pending' => 0,
+        'partially_paid' => 2,
+        'refunded' => 3,
+        default => 9, // Unknown financial status
+    };
     $shippingCode = $hasShipping ? 1 : 0;
     $logoCode = $hasLogoItem ? 1 : 0;
 
