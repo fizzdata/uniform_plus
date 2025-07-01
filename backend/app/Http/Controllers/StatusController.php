@@ -30,8 +30,8 @@ class StatusController extends Controller
  public function updateStatus(Request $request)
     {
         $request->validate([
-            'direction' => 'required|in:next,previous',
             'currentStatus' => 'required|integer',
+            'nextStatus' => 'required|integer',
         ]);
       try{
 
@@ -49,9 +49,11 @@ class StatusController extends Controller
             $currentStatus = $request->currentStatus;
         endif;
 
-
-        $nextStatus = ($request->direction == 'next' ? $currentStatus + 1 : $currentStatus - 1);    
-
+            //check if allowed status transition
+        $nextStatus = DB::table('order_status_transitions') 
+        ->where('from_status', $currentStatus)
+        ->where('to_status', $request->nextStatus)
+        ->value('to_status');
             // check if next is allowed status
         $nextStatusExist = DB::table('statuses')
             ->where('s_id', $nextStatus)

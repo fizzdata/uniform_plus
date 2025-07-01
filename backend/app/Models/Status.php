@@ -31,73 +31,28 @@ class Status extends Model
         return isset($item['title']) && stripos($item['title'], 'logo') !== false;
     });
 
-    // Encode components
-    $sourceCode = match ($source) {
-        'pos' => 1,
-        'web' => 2,
-        'shopify_draft_order' => 3,
-        'custom' => 4,
-        default => 9, // Unknown source
-    };
+$build_1 = DB::table('status_options')->where('digit_number', 1)->where('name', $source)->value('code_digit');
 
-    $financialCode = match ($financial) {
-        'paid' => 1,
-        'pending' => 0,
-        'partially_paid' => 2,
-        'refunded' => 3,
-        default => 9, // Unknown financial status
-    };
-    $shippingCode = $hasShipping ? 1 : 0;
-    $logoCode = $hasLogoItem ? 1 : 0;
+$build_2 = DB::table('status_options')->where('digit_number', 2)->where('name', $financial)->value('code_digit');
+
+$build_3 = $hasLogoItem ? DB::table('status_options')->where('digit_number', 3)->where('name', 'Logo Needed')->value('code_digit') : DB::table('status_options')->where('digit_number', 3)->where('name', 'No Logo')->value('code_digit');
+
+$build_4 = $hasShipping ? DB::table('status_options')->where('digit_number', 4)->where('name', 'Ship')->value('code_digit') : DB::table('status_options')->where('digit_number', 4)->where('name', 'Pickup')->value('code_digit');  
+
 
     // Compose full status_id
     $status = 1; // Initial status in the workflow
-    return $sourceCode * 10000 + $financialCode * 1000 + $shippingCode * 100 + $logoCode * 10 + $status;
+    return $build_1 * 10000 + $build_2 * 1000 + $build_3 * 100 + $build_4 * 10 + $status;
 }
 
-public static function decodeOrderStatus(int $statusId): array
-{
-    $statusString = str_pad((string)$statusId, 5, '0', STR_PAD_LEFT); // Ensure 5 digits
+    public static function getNextStatus($statusId)
+    {
+        // Fetch the next status based on the current status ID
+        $nextStatus = DB::table('to_status')
+            ->where('code_digit', $statusId % 10 + 1) // Increment the last digit to get the next status
+            ->value('id');
 
-    $components = [
-        'source'    => (int)substr($statusString, 0, 1),
-        'financial' => (int)substr($statusString, 1, 1),
-        'shipping'  => (int)substr($statusString, 2, 1),
-        'logo'      => (int)substr($statusString, 3, 1),
-        'step'      => (int)substr($statusString, 4, 1),
-    ];
+        return $nextStatus;
+    }
 
-    // Map readable meanings
-    $lookup = [
-        'source' => [
-            1 => 'POS',
-            2 => 'Web',
-            3 => 'Draft',
-            4 => 'Custom',
-            9 => 'Unknown',
-        ],
-        'financial' => [
-            0 => 'Unpaid / Pending',
-            1 => 'Paid',
-            2 => 'Partially Paid',
-            3 => 'Refunded',
-        ],
-        'shipping' => [
-            0 => 'Pickup',
-            1 => 'Delivery',
-        ],
-        'logo' => [
-            0 => 'No Logo',
-            1 => 'Logo Order',
-        ],
-    ];
-
-    return [
-        'source'    => $lookup['source'][$components['source']] ?? 'Unknown',
-        'financial' => $lookup['financial'][$components['financial']] ?? 'Unknown',
-        'shipping'  => $lookup['shipping'][$components['shipping']] ?? 'Unknown',
-        'logo'      => $lookup['logo'][$components['logo']] ?? 'Unknown',
-        'status_step' => $components['step'], // could link to actual status table if needed
-    ];
-}
 }
