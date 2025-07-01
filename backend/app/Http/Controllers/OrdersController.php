@@ -59,8 +59,9 @@ class OrdersController extends Controller
         //get next order status
 
     $nextStatus = DB::table('order_status_transitions')
+        ->select('to_status')
         ->where('from_status', $Status_id)
-        ->value('to_status' );
+        ->get();
 
 
         $formattedOrders[] = [

@@ -17,13 +17,23 @@ class StatusController extends Controller
         // Get all statuses
 
     $statuses = DB::table('statuses')
-            ->select('s_id', 'name', 'color', 'description')
-            ->orderBy('s_id')
+            ->select('id','name', 'color', 'description')
             ->get();
 
         // Return the statuses as a JSON response
     return response()->json($statuses);
 
+    }
+
+    public function getStatusTransitions()
+    {
+        // Get all status transitions
+        $transitions = DB::table('order_status_transitions')
+            ->select('id', 'from_status', 'to_status')
+            ->get();
+
+        // Return the transitions as a JSON response
+        return response()->json($transitions);
     }
 
     
@@ -56,7 +66,7 @@ class StatusController extends Controller
         ->value('to_status');
             // check if next is allowed status
         $nextStatusExist = DB::table('statuses')
-            ->where('s_id', $nextStatus)
+            ->where('id', $nextStatus)
             ->first();
 
             // Check if the requested status is valid

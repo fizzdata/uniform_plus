@@ -121,7 +121,7 @@ class Shopify extends Model
         'metafield' => [
             'namespace' => $namespace,
             'key' => $key,
-            'value' => $status->s_id,
+            'value' => $status->id,
             'type' => $type,
         ]
     ]);

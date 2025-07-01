@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('order_status_transitions', function (Blueprint $table) {
             $table->id();
-            $table->string('from_status', 5);
-            $table->string('to_status', 5);
+            $table->integer('from_status')->constrained('statuses')->onDelete('cascade');
+            $table->integer('to_status')->constrained('statuses')->onDelete('cascade');
             $table->string('description')->nullable();
             $table->timestamps();
         });
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_order_status_transitions');
+        Schema::dropIfExists('order_status_transitions');
     }
 };
