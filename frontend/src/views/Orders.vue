@@ -113,22 +113,39 @@
                     v-for="status in order.next_status"
                     :key="status.id || status"
                     @click="moveToNextStatus(order, status)"
+                    :disabled="
+                      loadingOrderId &&
+                      loadingOrderId !== order.shopify_order_id
+                    "
                     class="text-xs inline-flex gap-2 items-center cursor-pointer px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
                     v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
                   >
-                    <!-- Move to {{ getNextStatusName(status) }} -->
-                    <IconArrowRight class="size-5" />
+                    <template v-if="loadingOrderId === order.shopify_order_id">
+                      <svg
+                        class="animate-spin h-4 w-4 text-indigo-800"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        />
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        />
+                      </svg>
+                    </template>
+                    <template v-else>
+                      <IconArrowRight class="size-5" />
+                    </template>
                   </button>
-                  <!-- <button
-                    v-if="order.next_status.length"
-                    v-for="(status, index) in order.next_status"
-                    :key="index"
-                    @click="moveToNextStatus(order, status)"
-                    class="text-xs inline-flex gap-2 items-center cursor-pointer px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
-                  >
-                    Move to {{ getNextStatusName(status) }}
-                    <IconArrowRight class="size-5" />
-                  </button> -->
                 </div>
               </td>
 
@@ -190,6 +207,7 @@ import { toast } from "vue3-toastify";
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const shop = localStorage.getItem("shop_name");
 const statuses = ref([]);
+const loadingOrderId = ref(null); // track the current loading order
 const {
   orders,
   fetchOrders,
@@ -316,49 +334,48 @@ const getNextStatusName = (order) => {
 
 const moveToNextStatus = async (order, status) => {
   const nextStatusId = status.to_status;
-  if (nextStatusId) {
-    await updateOrderStatus(order, nextStatusId);
-  }
+  if (!nextStatusId) return;
+
+  loadingOrderId.value = order.shopify_order_id;
+
+  await updateOrderStatus(order, nextStatusId, "next");
+
+  loadingOrderId.value = null;
 };
 
 const moveToPreviousStatus = async (order) => {
   const prevStatusId = order.previous_status_id;
   if (prevStatusId) {
-    await updateOrderStatus(order, prevStatusId);
+    await updateOrderStatus(order, prevStatusId, "previous");
   }
 };
 
-const updateOrderStatus = async (order, newStatusId) => {
+const updateOrderStatus = async (order, newStatusId, status) => {
   const originalStatus = order.status_id;
-
-  // Store original status in order for potential undo
-  if (!order.previous_status_id) {
-    order.previous_status_id = order.status_id;
-  }
 
   try {
     const payload = {
       shop,
       currentStatus: originalStatus,
       nextStatus: Number(newStatusId),
-      direction: newStatusId > originalStatus ? "next" : "previous",
+      direction: status,
     };
+
     const response = await axios.post(
       `${apiUrl}/api/orders/update-status/${order.shopify_order_id}`,
       payload
     );
 
     if (response?.data?.success) {
-      // Optimistic UI update
       order.status_id = newStatusId;
+      await fetchOrders(false);
       toast.success(response?.data?.message || "Status updated successfully");
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }
   } catch (error) {
-    // Revert on error
-    order.status_id = originalStatus;
-    toast.error(error.response.data.error || "Failed to update status");
+    order.status_id = originalStatus; // revert
+    toast.error(error?.response?.data?.error || "Failed to update status");
   }
 };
 
