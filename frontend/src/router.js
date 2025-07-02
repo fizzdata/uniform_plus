@@ -6,6 +6,7 @@ import Inventory from "./views/Inventory.vue";
 import PurchaseOrder from "./views/PurchaseOrder.vue";
 import StatusPage from "./views/Status.vue";
 
+
 const routes = [
   { path: "/", component: Dashboard },
   { path: "/orders", component: Orders },

@@ -114,6 +114,7 @@ class Shopify extends Model
     }
 
         public function set_order_status($orderId, $status, $key = 'status', $namespace = 'custom_status', $type = 'single_line_text_field')
+
 {
     $response = Http::withHeaders([
         'X-Shopify-Access-Token' => $this->access_token,

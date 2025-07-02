@@ -39,11 +39,11 @@ $statuses = [
     ['name' => 'Ready for Pickup', 'description' => 'Awaiting customer collection', 'color' => 'bg-amber-500'],
 ];
 
-
+  
     foreach($statuses as $s){
 
    
     DB::table('statuses')->insert($s);
 }
-}
+    }
 }

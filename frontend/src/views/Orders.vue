@@ -149,6 +149,7 @@
                 </div>
               </td>
 
+
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${{ order.amount }}
               </td>
@@ -272,7 +273,6 @@ const getStatusDisplay = (status_id) => {
       }
     : { name: "Unknown", color: "bg-gray-500", description: "No description" };
 };
-
 const openOrderWindow = (url) => {
   window.open(
     url,
@@ -330,6 +330,7 @@ const hasPreviousStatus = (order) => {
 const getNextStatusName = (order) => {
   const status = statuses.value.find((s) => s.id === Number(order?.to_status));
   return status ? status.name : "";
+
 };
 
 const moveToNextStatus = async (order, status) => {
@@ -352,6 +353,7 @@ const moveToPreviousStatus = async (order) => {
 
 const updateOrderStatus = async (order, newStatusId, status) => {
   const originalStatus = order.status_id;
+
 
   try {
     const payload = {

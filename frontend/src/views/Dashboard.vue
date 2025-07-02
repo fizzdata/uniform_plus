@@ -42,6 +42,7 @@ const installApp = async (shopName) => {
       console.log("Shop verified successfully.");
     } else {
       // Not valid – redirect to Shopify auth
+
       window.location.href = `${apiUrl}/auth/shopify?shop=${shopName}`;
     }
   } catch (error) {
