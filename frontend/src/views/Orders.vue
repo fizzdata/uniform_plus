@@ -80,6 +80,11 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
                   <button
+                    v-tooltip="
+                      hasPreviousStatus(order)
+                        ? getStatusDisplay(order.previous_status_id)?.name
+                        : ''
+                    "
                     @click="moveToPreviousStatus(order)"
                     class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     :disabled="!hasPreviousStatus(order)"
@@ -88,6 +93,10 @@
                   </button>
 
                   <span
+                    v-tooltip="
+                      getStatusDisplay(order.status_id)?.description ||
+                      'No description'
+                    "
                     :title="getStatusDisplay(order.status_id).description"
                     :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       getStatusDisplay(order.status_id)?.color
@@ -97,13 +106,29 @@
                   </span>
 
                   <button
-                    v-if="order.next_status !== ''"
-                    @click="moveToNextStatus(order)"
+                    v-if="
+                      Array.isArray(order.next_status) &&
+                      order.next_status.length
+                    "
+                    v-for="status in order.next_status"
+                    :key="status.id || status"
+                    @click="moveToNextStatus(order, status)"
                     class="text-xs inline-flex gap-2 items-center cursor-pointer px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
+                    v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
                   >
-                    Move to {{ getNextStatusName(order) }}
+                    <!-- Move to {{ getNextStatusName(status) }} -->
                     <IconArrowRight class="size-5" />
                   </button>
+                  <!-- <button
+                    v-if="order.next_status.length"
+                    v-for="(status, index) in order.next_status"
+                    :key="index"
+                    @click="moveToNextStatus(order, status)"
+                    class="text-xs inline-flex gap-2 items-center cursor-pointer px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
+                  >
+                    Move to {{ getNextStatusName(status) }}
+                    <IconArrowRight class="size-5" />
+                  </button> -->
                 </div>
               </td>
 
@@ -220,10 +245,14 @@ const fetchStatuses = async () => {
 };
 
 const getStatusDisplay = (status_id) => {
-  const status = statuses.value.find((s) => s.s_id === Number(status_id));
+  const status = statuses.value.find((s) => s.id === Number(status_id));
   return status
-    ? { name: status.name, color: status.color }
-    : { name: "Unknown", color: "bg-gray-500" };
+    ? {
+        name: status.name,
+        color: status.color,
+        description: status.description,
+      }
+    : { name: "Unknown", color: "bg-gray-500", description: "No description" };
 };
 
 const openOrderWindow = (url) => {
@@ -267,8 +296,12 @@ const openOrderWindow = (url) => {
 
 // New hselper functions
 const hasPreviousStatus = (order) => {
-  const prevStatusId = order.status_id - 1;
-  return statuses.value.some((s) => s.s_id === prevStatusId);
+  const prevStatusId = order.previous_status_id;
+  return (
+    prevStatusId &&
+    prevStatusId !== order.status_id && // ensure it's different
+    statuses.value.some((s) => s.id === prevStatusId) // ensure it's a valid status
+  );
 };
 
 // const hasNextStatus = (order) => {
@@ -277,32 +310,38 @@ const hasPreviousStatus = (order) => {
 // };
 
 const getNextStatusName = (order) => {
-  const status = statuses.value.find(
-    (s) => s.s_id === Number(order?.next_status)
-  );
-
+  const status = statuses.value.find((s) => s.id === Number(order?.to_status));
   return status ? status.name : "";
 };
 
-const moveToNextStatus = async (order) => {
-  const nextStatusId = order.next_status;
-  await updateOrderStatus(order, nextStatusId);
+const moveToNextStatus = async (order, status) => {
+  const nextStatusId = status.to_status;
+  if (nextStatusId) {
+    await updateOrderStatus(order, nextStatusId);
+  }
 };
 
 const moveToPreviousStatus = async (order) => {
-  const prevStatusId = order.status_id - 1;
-  await updateOrderStatus(order, prevStatusId);
+  const prevStatusId = order.previous_status_id;
+  if (prevStatusId) {
+    await updateOrderStatus(order, prevStatusId);
+  }
 };
 
 const updateOrderStatus = async (order, newStatusId) => {
   const originalStatus = order.status_id;
-  // Optimistic UI update
-  // order.status_id = newStatusId;
+
+  // Store original status in order for potential undo
+  if (!order.previous_status_id) {
+    order.previous_status_id = order.status_id;
+  }
+
   try {
     const payload = {
       shop,
       currentStatus: originalStatus,
       nextStatus: Number(newStatusId),
+      direction: newStatusId > originalStatus ? "next" : "previous",
     };
     const response = await axios.post(
       `${apiUrl}/api/orders/update-status/${order.shopify_order_id}`,
@@ -310,6 +349,8 @@ const updateOrderStatus = async (order, newStatusId) => {
     );
 
     if (response?.data?.success) {
+      // Optimistic UI update
+      order.status_id = newStatusId;
       toast.success(response?.data?.message || "Status updated successfully");
     } else {
       toast.error(response?.data?.message || "Failed to update status");
@@ -318,8 +359,6 @@ const updateOrderStatus = async (order, newStatusId) => {
     // Revert on error
     order.status_id = originalStatus;
     toast.error(error.response.data.error || "Failed to update status");
-
-    // showMessage("Failed to update status: " + error.message, "error");
   }
 };
 
