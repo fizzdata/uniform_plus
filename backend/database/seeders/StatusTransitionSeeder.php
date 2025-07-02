@@ -21,45 +21,45 @@ class StatusTransitionSeeder extends Seeder
 
 $transitions = [
     // In-store payment workflow
-    ['Started', 'Paid in Store'],
+    ['POS order Started', 'Paid in Store'],
     ['Paid in Store', 'Completed'],
-    ['Paid in Store', 'Logo Production'], // For delivery
+    ['Paid in Store', 'Logo Production'],
+    ['Logo Production', 'Dropped Off logo'],
     ['Dropped Off logo', 'Picked Up logo'],
     ['Picked Up logo', 'Ready for Delivery'],
     ['Ready for Delivery', 'Delivered'],
     ['Ready for Pickup', 'Picked Up'],
 
     // Phone payment workflow
-    ['Started', 'Paid on Phone'],
+    ['Phone order Started', 'Paid on Phone'],
     ['Paid on Phone', 'Order Picked'],
     ['Order Picked', 'Ready for Delivery'],
     ['Paid on Phone', 'Ready for Pickup'], // Phone pickup path
 
     // Website payment workflow
-    ['Started', 'Paid on Website'],
+    ['Web order Started', 'Paid on Website'],
     ['Paid on Website', 'Order Picked'],
     ['Order Picked', 'Order Packed'],
     ['Order Packed', 'Ready for Delivery'],
     ['Order Packed', 'Ready for Pickup'],
 
     // Custom Production Flow
-    ['Started', 'Custom Order Production'],
+    ['Custom order Started', 'Custom Order Production'],
     ['Custom Order Production', 'Order sent to Factory'],
     ['Order sent to Factory', 'Goods Received'],
     ['Goods Received', 'Contacted Customer'],
     ['Contacted Customer', 'Ready for Pickup'],
     ['Picked Up', 'Completed']
 ];
-
     $data = [];
     foreach ($transitions as $transition) {
         $data[] = [
-            'current_status_id' => $statuses[$transition[0]],
-            'next_status_id' => $statuses[$transition[1]]
+            'from_status' => $statuses[$transition[0]],
+            'to_status' => $statuses[$transition[1]]
         ];
     }
 
-    DB::table('status_transitions')->insert($data);
+    DB::table('order_status_transitions')->insert($data);
 
     }
 }

@@ -17,8 +17,7 @@ class StatusController extends Controller
         // Get all statuses
 
     $statuses = DB::table('statuses')
-            ->select('s_id', 'name', 'color', 'description')
-            ->orderBy('s_id')
+            ->select('id','name', 'color', 'description')
             ->get();
 
         // Return the statuses as a JSON response
@@ -26,12 +25,24 @@ class StatusController extends Controller
 
     }
 
+    public function getStatusTransitions()
+    {
+        // Get all status transitions
+        $transitions = DB::table('order_status_transitions')
+            ->select('id', 'from_status', 'to_status')
+            ->get();
+
+        // Return the transitions as a JSON response
+        return response()->json($transitions);
+    }
+
     
  public function updateStatus(Request $request)
     {
         $request->validate([
-            'direction' => 'required|in:next,previous',
             'currentStatus' => 'required|integer',
+            'nextStatus' => 'required|integer',
+            'direction' => 'required|in:previous,next',
         ]);
       try{
 
@@ -49,13 +60,29 @@ class StatusController extends Controller
             $currentStatus = $request->currentStatus;
         endif;
 
+        //check if allowed status transition
 
-        $nextStatus = ($request->direction == 'next' ? $currentStatus + 1 : $currentStatus - 1);    
+        if ($request->direction === 'next'):
 
+        $nextStatus = DB::table('order_status_transitions') 
+        ->where('from_status', $currentStatus)
+        ->where('to_status', $request->nextStatus)
+        ->value('to_status');
             // check if next is allowed status
         $nextStatusExist = DB::table('statuses')
-            ->where('s_id', $nextStatus)
+            ->where('id', $nextStatus)
             ->first();
+        elseif($request->direction === 'previous'):
+                       $nextStatus = DB::table('order_status_transitions') 
+        ->where('to_status', $currentStatus)
+        ->where('from_status', $request->nextStatus)
+        ->value('from_status');
+                
+        $nextStatusExist = DB::table('statuses')
+            ->where('id', $nextStatus)
+            ->first();
+        endif;
+
 
             // Check if the requested status is valid
         if (!$nextStatusExist) {
@@ -84,7 +111,7 @@ class StatusController extends Controller
         $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
 
         // Update the order status in Shopify
-        $shop->set_order_status($request->order_id, $nextStatusExist->name);
+        $shop->set_order_status($request->order_id, $nextStatusExist);
 
         
         return response()->json(['success' => true, 'message' => 'Status updated successfully'], 200);

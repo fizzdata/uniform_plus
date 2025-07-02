@@ -4,6 +4,8 @@ import Orders from "./views/Orders.vue";
 import install from "./views/Install.vue";
 import Inventory from "./views/Inventory.vue";
 import PurchaseOrder from "./views/PurchaseOrder.vue";
+import StatusPage from "./views/Status.vue";
+
 
 const routes = [
   { path: "/", component: Dashboard },
@@ -11,6 +13,7 @@ const routes = [
   { path: "/install", component: install },
   { path: "/inventory", component: Inventory },
   { path: "/purchase-orders", component: PurchaseOrder },
+  { path: "/status", component: StatusPage },
 ];
 
 const router = createRouter({

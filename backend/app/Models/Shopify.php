@@ -113,7 +113,8 @@ class Shopify extends Model
         return $response->json()['orders'];
     }
 
-        public function set_order_status($orderId,  $value, $key = 'status', $namespace = 'custom_status', $type = 'single_line_text_field')
+        public function set_order_status($orderId, $status, $key = 'status', $namespace = 'custom_status', $type = 'single_line_text_field')
+
 {
     $response = Http::withHeaders([
         'X-Shopify-Access-Token' => $this->access_token,
@@ -121,7 +122,7 @@ class Shopify extends Model
         'metafield' => [
             'namespace' => $namespace,
             'key' => $key,
-            'value' => $value,
+            'value' => $status->id,
             'type' => $type,
         ]
     ]);
@@ -135,7 +136,7 @@ class Shopify extends Model
     ])->put("https://{$this->shop_domain}/admin/api/2024-04/orders/{$orderId}.json", [
         'order' => [
             'id' => $orderId,
-            'tags' => $value
+            'tags' => $status->name
         ]
     ]);
 

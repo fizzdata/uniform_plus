@@ -55,12 +55,22 @@ class OrdersController extends Controller
         $Status_id = $orderStatuses[$shopifyOrderId]; // Get existing status
     endif;
 
+    
+        //get next order status
+
+    $nextStatus = DB::table('order_status_transitions')
+        ->select('to_status')
+        ->where('from_status', $Status_id)
+        ->get();
+
+
         $formattedOrders[] = [
             'id' => $OrderId,
             'shopify_order_id' => $shopifyOrderId,
             'customer_name' => $customerName,
             'created_at' => $order['created_at'],
             'status_id' => $Status_id,
+            'next_status' => $nextStatus,
             'amount' => $order['current_total_price'],
             'link' => $order['order_status_url'],
         ];
