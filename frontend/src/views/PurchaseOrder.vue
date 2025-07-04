@@ -44,11 +44,11 @@
             <div class="text-xs text-gray-600">
               <span class="mr-4">
                 Ordered:
-                {{ productGroupTotals[supplier]?.totalOrdered || 0 }}
+                {{ formatNumber(productGroupTotals[supplier]?.totalOrdered) }}
               </span>
               <span>
                 Received:
-                {{ productGroupTotals[supplier]?.totalReceived || 0 }}
+                {{ formatNumber(productGroupTotals[supplier]?.totalReceived) }}
               </span>
             </div>
           </div>
@@ -558,6 +558,10 @@ const productGroupTotals = computed(() => {
   return totals;
 });
 
+const formatNumber = (num) => {
+  return Number(num || 0).toLocaleString();
+};
+
 // New order form
 const newOrder = ref({
   supplier: "",
@@ -566,25 +570,8 @@ const newOrder = ref({
   variants: [], // Stores variants with quantities
 });
 
-const fetchItemVariants = (data) => {
-  const matchingItem = items.value.find(
-    (item) => Number(item.value) === Number(data.target.value)
-  );
-  if (matchingItem?.variants) {
-    variants.value = matchingItem.variants;
-  }
-};
 const hasSelectedVariants = computed(() => {
   return newOrder.value.variants.some((v) => v.quantity_ordered > 0);
-});
-
-const isValidReceive = computed(() => {
-  if (!selectedLocation.value) return false;
-  return selectedOrder.value.items.some(
-    (item) =>
-      item.quantity_to_receive > 0 &&
-      item.quantity_to_receive <= item.quantity_ordered - item.quantity_received
-  );
 });
 
 const selectedProduct = (shopifyItemId) => {
@@ -761,12 +748,6 @@ const openCreateProductModal = (order) => {
   };
 
   showCreateOrderModal.value = true;
-};
-
-const calculateStatus = (order) => {
-  if (order.quantity_received >= order.quantity_ordered) return "received";
-  if (order.quantity_received > 0) return "Partial";
-  return "Pending";
 };
 
 // Watch for changes to reload orders
