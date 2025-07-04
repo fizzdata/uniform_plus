@@ -420,9 +420,8 @@ const updateOrderStatus = async (order, newStatusId, status) => {
       const previousStatus = originalStatus;
 
       // Update the previous status for this order
-      if (!previousStatuses.value[order.shopify_order_id]) {
-        previousStatuses.value[order.shopify_order_id] = previousStatus;
-      }
+
+      previousStatuses.value[order.shopify_order_id] = previousStatus;
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }
