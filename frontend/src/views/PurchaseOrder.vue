@@ -37,9 +37,21 @@
           class="bg-gray-100 px-4 py-2 cursor-pointer flex justify-between items-center rounded-2xl"
           @click="toggleGroup(supplier)"
         >
-          <h3 class="font-semibold capitalize">
-            Product: {{ selectedProduct(supplier)?.label }}
-          </h3>
+          <div class="inline-flex gap-4 items-end">
+            <span class="font-semibold capitalize text-sm">
+              Product: {{ selectedProduct(supplier)?.label }}
+            </span>
+            <div class="text-xs text-gray-600">
+              <span class="mr-4">
+                Ordered:
+                {{ productGroupTotals[supplier]?.totalOrdered || 0 }}
+              </span>
+              <span>
+                Received:
+                {{ productGroupTotals[supplier]?.totalReceived || 0 }}
+              </span>
+            </div>
+          </div>
           <div class="flex justify-between gap-3 items-center">
             <button
               @click.stop="openReceiveModal(items, false)"
@@ -525,6 +537,25 @@ const groupedOrders = computed(() => {
   }
 
   return result;
+});
+
+// Calculate qty order and recieved
+const productGroupTotals = computed(() => {
+  const totals = {};
+  for (const [supplier, group] of Object.entries(groupedOrders.value)) {
+    totals[supplier] = {
+      totalOrdered: 0,
+      totalReceived: 0,
+    };
+
+    if (group?.items) {
+      group.items.forEach((item) => {
+        totals[supplier].totalOrdered += Number(item.quantity_ordered) || 0;
+        totals[supplier].totalReceived += Number(item.quantity_received) || 0;
+      });
+    }
+  }
+  return totals;
 });
 
 // New order form
