@@ -194,4 +194,77 @@ public function delete(Request $request)
     return response()->json(['success' => true, 'message' => 'Purchase Order deleted successfully']);
 }
 
+public function undo_received(Request $request){
+    // this will reset the received to 0 and revert inventory
+
+    
+
+    $order = DB::table('purchase_orders')
+        ->where('id', $request->order_id)
+        ->first();
+
+    if (!$order) {
+        return response()->json(['error' => 'Order not found'], 404);
+    }
+
+
+    //i need to check if there is more then one location used for this inventory item
+    $find_used_location = DB::table('inventory_actions')
+    ->where('inventory_item_id', $order->inventory_item_id)
+    ->where('shop_id', $request->shop['id'])
+    ->distinct('shopify_location_id_to')
+    ->pluck('shopify_location_id_to');
+
+    if ($find_used_location->isEmpty()) {
+        return response()->json(['error' => 'No inventory actions found for this order'], 404);
+    }
+
+    if ($find_used_location->count() > 1) {
+        return response()->json(['error' => 'NOT SURE TO WHICH LOCATION IT NEEDS TO GO BACK'], 400);
+    }
+
+    if ($order->quantity_received < 1) {
+        return response()->json(['error' => 'Nothing to undo for this order'], 400);
+    }
+
+
+    $shop = new \App\Models\Shopify($request->shop['id']);
+
+    try {
+    $adjust = $shop->adjust_inventory_level($order->inventory_item_id, $find_used_location[0], -$order->quantity_received);   
+      
+  
+
+        DB::table('inventory_actions')
+        ->insert([
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $order->inventory_item_id,
+            'shopify_location_id_from' => $find_used_location[0],
+            'shopify_location_id_to' => null,
+            'quantity' => $order->quantity_received,
+            'action_type' => 'Undo',
+            'performed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        //reset the received quantity to 0
+    DB::table('purchase_orders')
+        ->where('id', $request->order_id)
+        ->update([
+            'quantity_received' => 0,
+            'status' => 'pending',
+            'received_at' => null,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Order received quantity reset successfully']);
+        
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to adjust inventory: ' . $e->getMessage()], 500);
+    }
+
+        
+}
+
 }
