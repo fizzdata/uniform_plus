@@ -242,7 +242,7 @@ public function undo_received(Request $request){
             'shopify_location_id_from' => $find_used_location[0],
             'shopify_location_id_to' => null,
             'quantity' => $order->quantity_received,
-            'action_type' => 'Undo',
+            'action_type' => 'Adjust',
             'performed_at' => now(),
             'created_at' => now(),
             'updated_at' => now()
