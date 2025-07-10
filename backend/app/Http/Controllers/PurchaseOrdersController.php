@@ -212,11 +212,12 @@ public function undo_received(Request $request){
     $find_used_location = DB::table('inventory_actions')
     ->where('inventory_item_id', $order->inventory_item_id)
     ->where('shop_id', $request->shop['id'])
+    ->whereNotNull('shopify_location_id_to')
     ->distinct('shopify_location_id_to')
     ->pluck('shopify_location_id_to');
 
     if ($find_used_location->isEmpty()) {
-        return response()->json(['error' => 'No inventory actions found for this order'], 404);
+        return response()->json(['error' => 'No inventory actions found for this order'], 400);
     }
 
     if ($find_used_location->count() > 1) {
