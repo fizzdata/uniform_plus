@@ -119,6 +119,13 @@
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
                 <button
+                  v-tooltip="'Undo Recieved'"
+                  @click="onClickUndoRecieved(item)"
+                  class="text-gray-600 hover:text-gray-900 cursor-pointer"
+                >
+                  <IconArrowUturn class="text-blue-600" />
+                </button>
+                <button
                   v-tooltip="'Add Recieve'"
                   @click="openReceiveModal(item, true)"
                   class="text-gray-600 hover:text-gray-900 cursor-pointer"
@@ -481,6 +488,7 @@ import IconDelete from "@/components/icons/IconDelete.vue";
 import IconPlusCircle from "@/components/icons/IconPlusCircle.vue";
 import BaseSpinner from "@/components/BaseSpinner.vue";
 import { Switch } from "@headlessui/vue";
+import IconArrowUturn from "@/components/icons/IconArrowUturn.vue";
 
 // Reactive state
 const orders = ref([]);
@@ -980,6 +988,35 @@ const fetchProducts = async () => {
     errorItemMessage.value = "Failed to load products. Please try again.";
   } finally {
     loadingItems.value = false;
+  }
+};
+
+const onClickUndoRecieved = async (data) => {
+  try {
+    const response = await axios.post(
+      `${apiUrl}/api/purchase-orders/${data.id}/undo?shop=${shop}`
+    );
+
+    if (response?.data?.success) {
+      toast(
+        response?.data?.message ||
+          "Order received quantity reset successfully.",
+        {
+          type: "success",
+        }
+      );
+      await fetchOrders();
+    }
+  } catch (error) {
+    console.log("🚀 ~ onClickUndoRecieved ~ err:", error);
+    toast(
+      error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        "Failed to create order. Please try again.",
+      {
+        type: "error",
+      }
+    );
   }
 };
 
