@@ -82,14 +82,48 @@
                   <button
                     v-tooltip="
                       hasPreviousStatus(order)
-                        ? getStatusDisplay(order.previous_status_id)?.name
+                        ? getStatusDisplay(
+                            previousStatuses[order.shopify_order_id]
+                          )?.name
+
                         : ''
                     "
                     @click="moveToPreviousStatus(order)"
                     class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     :disabled="!hasPreviousStatus(order)"
                   >
-                    <IconArrowLeft class="size-5" />
+
+                    <template
+                      v-if="
+                        loadingOrderId ===
+                        previousStatuses[order.shopify_order_id]
+                      "
+                    >
+                      <svg
+                        class="animate-spin h-4 w-4 text-indigo-800"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        />
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        />
+                      </svg>
+                    </template>
+                    <template v-else>
+                      <IconArrowLeft class="size-5" />
+                    </template>
+
                   </button>
 
                   <span
@@ -170,7 +204,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="flex justify-between items-center mt-4">
+    <!-- <div class="flex justify-between items-center mt-4">
       <div class="text-sm text-gray-500">
         Showing <span class="font-medium">1</span> to
         <span class="font-medium">{{ orders.length }}</span> of
@@ -192,7 +226,7 @@
           Next
         </button>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -209,6 +243,9 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const shop = localStorage.getItem("shop_name");
 const statuses = ref([]);
 const loadingOrderId = ref(null); // track the current loading order
+
+const previousStatuses = ref({});
+
 const {
   orders,
   fetchOrders,
@@ -314,13 +351,16 @@ const openOrderWindow = (url) => {
 
 // New hselper functions
 const hasPreviousStatus = (order) => {
-  const prevStatusId = order.previous_status_id;
+
+  const previousStatusId = previousStatuses.value[order.shopify_order_id];
+
   return (
-    prevStatusId &&
-    prevStatusId !== order.status_id && // ensure it's different
-    statuses.value.some((s) => s.id === prevStatusId) // ensure it's a valid status
+    previousStatusId &&
+    previousStatusId !== order.status_id && // ensure it's different
+    statuses.value.some((s) => s.id === previousStatusId) // ensure it's a valid status
   );
 };
+
 
 // const hasNextStatus = (order) => {
 //   const nextStatusId = order.status_id + 1;
@@ -334,20 +374,35 @@ const getNextStatusName = (order) => {
 };
 
 const moveToNextStatus = async (order, status) => {
-  const nextStatusId = status.to_status;
-  if (!nextStatusId) return;
+  try {
+    const nextStatusId = status.to_status;
+    if (!nextStatusId) return;
 
-  loadingOrderId.value = order.shopify_order_id;
+    loadingOrderId.value = order.shopify_order_id;
 
-  await updateOrderStatus(order, nextStatusId, "next");
-
-  loadingOrderId.value = null;
+    await updateOrderStatus(order, nextStatusId, "next");
+  } catch (error) {
+    console.error("Error moving to next status:", error);
+  } finally {
+    loadingOrderId.value = null;
+  }
 };
 
 const moveToPreviousStatus = async (order) => {
-  const prevStatusId = order.previous_status_id;
-  if (prevStatusId) {
-    await updateOrderStatus(order, prevStatusId, "previous");
+  try {
+    // If we have a previous status stored, use it to move back
+    if (previousStatuses.value[order.shopify_order_id]) {
+      const previousStatusId = previousStatuses.value[order.shopify_order_id];
+      loadingOrderId.value = previousStatusId;
+      await updateOrderStatus(order, previousStatusId, "previous");
+      // Clear the previous status after moving back
+      delete previousStatuses.value[order.shopify_order_id];
+    }
+  } catch (error) {
+    console.error("Error moving to previous status:", error);
+  } finally {
+    loadingOrderId.value = null;
+
   }
 };
 
@@ -372,6 +427,14 @@ const updateOrderStatus = async (order, newStatusId, status) => {
       order.status_id = newStatusId;
       await fetchOrders(false);
       toast.success(response?.data?.message || "Status updated successfully");
+
+
+      const previousStatus = originalStatus;
+
+      // Update the previous status for this order
+
+      previousStatuses.value[order.shopify_order_id] = previousStatus;
+
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }

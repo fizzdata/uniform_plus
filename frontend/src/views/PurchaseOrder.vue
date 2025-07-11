@@ -44,11 +44,13 @@
             <div class="text-xs text-gray-600">
               <span class="mr-4">
                 Ordered:
-                {{ productGroupTotals[supplier]?.totalOrdered || 0 }}
+
+                {{ formatNumber(productGroupTotals[supplier]?.totalOrdered) }}
               </span>
               <span>
                 Received:
-                {{ productGroupTotals[supplier]?.totalReceived || 0 }}
+                {{ formatNumber(productGroupTotals[supplier]?.totalReceived) }}
+
               </span>
             </div>
           </div>
@@ -118,6 +120,13 @@
               <td
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium gap-4 flex"
               >
+                <button
+                  v-tooltip="'Undo Recieved'"
+                  @click="onClickUndoRecieved(item)"
+                  class="text-gray-600 hover:text-gray-900 cursor-pointer"
+                >
+                  <IconArrowUturn class="text-blue-600" />
+                </button>
                 <button
                   v-tooltip="'Add Recieve'"
                   @click="openReceiveModal(item, true)"
@@ -481,6 +490,7 @@ import IconDelete from "@/components/icons/IconDelete.vue";
 import IconPlusCircle from "@/components/icons/IconPlusCircle.vue";
 import BaseSpinner from "@/components/BaseSpinner.vue";
 import { Switch } from "@headlessui/vue";
+import IconArrowUturn from "@/components/icons/IconArrowUturn.vue";
 
 // Reactive state
 const orders = ref([]);
@@ -558,6 +568,12 @@ const productGroupTotals = computed(() => {
   return totals;
 });
 
+
+const formatNumber = (num) => {
+  return Number(num || 0).toLocaleString();
+};
+
+
 // New order form
 const newOrder = ref({
   supplier: "",
@@ -566,25 +582,8 @@ const newOrder = ref({
   variants: [], // Stores variants with quantities
 });
 
-const fetchItemVariants = (data) => {
-  const matchingItem = items.value.find(
-    (item) => Number(item.value) === Number(data.target.value)
-  );
-  if (matchingItem?.variants) {
-    variants.value = matchingItem.variants;
-  }
-};
 const hasSelectedVariants = computed(() => {
   return newOrder.value.variants.some((v) => v.quantity_ordered > 0);
-});
-
-const isValidReceive = computed(() => {
-  if (!selectedLocation.value) return false;
-  return selectedOrder.value.items.some(
-    (item) =>
-      item.quantity_to_receive > 0 &&
-      item.quantity_to_receive <= item.quantity_ordered - item.quantity_received
-  );
 });
 
 const selectedProduct = (shopifyItemId) => {
@@ -761,12 +760,6 @@ const openCreateProductModal = (order) => {
   };
 
   showCreateOrderModal.value = true;
-};
-
-const calculateStatus = (order) => {
-  if (order.quantity_received >= order.quantity_ordered) return "received";
-  if (order.quantity_received > 0) return "Partial";
-  return "Pending";
 };
 
 // Watch for changes to reload orders
@@ -999,6 +992,35 @@ const fetchProducts = async () => {
     errorItemMessage.value = "Failed to load products. Please try again.";
   } finally {
     loadingItems.value = false;
+  }
+};
+
+const onClickUndoRecieved = async (data) => {
+  try {
+    const response = await axios.post(
+      `${apiUrl}/api/purchase-orders/${data.id}/undo?shop=${shop}`
+    );
+
+    if (response?.data?.success) {
+      toast(
+        response?.data?.message ||
+          "Order received quantity reset successfully.",
+        {
+          type: "success",
+        }
+      );
+      await fetchOrders();
+    }
+  } catch (error) {
+    console.log("🚀 ~ onClickUndoRecieved ~ err:", error);
+    toast(
+      error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        "Failed to create order. Please try again.",
+      {
+        type: "error",
+      }
+    );
   }
 };
 
