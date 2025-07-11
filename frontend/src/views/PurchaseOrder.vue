@@ -44,11 +44,13 @@
             <div class="text-xs text-gray-600">
               <span class="mr-4">
                 Ordered:
+
                 {{ formatNumber(productGroupTotals[supplier]?.totalOrdered) }}
               </span>
               <span>
                 Received:
                 {{ formatNumber(productGroupTotals[supplier]?.totalReceived) }}
+
               </span>
             </div>
           </div>
@@ -566,9 +568,11 @@ const productGroupTotals = computed(() => {
   return totals;
 });
 
+
 const formatNumber = (num) => {
   return Number(num || 0).toLocaleString();
 };
+
 
 // New order form
 const newOrder = ref({
