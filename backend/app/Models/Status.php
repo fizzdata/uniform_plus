@@ -66,6 +66,8 @@ switch ($sourceKey) {
         break;
 }
 
+
+
     $status = status::firstOrCreate(
         ['name' => $statusName],
     ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]
@@ -78,7 +80,7 @@ switch ($sourceKey) {
     // If status ID is found, return it
 
 if($statusId):
-    return $statusId;
+    
 else:
     return new \Exception("Status not found: $statusName");
 endif;
