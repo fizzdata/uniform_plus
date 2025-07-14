@@ -13,15 +13,15 @@ class Status extends Model
     $source = strtolower($order['source_name'] ?? '');
     $financial = strtolower($order['financial_status'] ?? '');
     // $shippingLines = $order['shipping_lines'] ?? [];
-    // $items = $order['line_items'] ?? [];
+    $items = $order['line_items'] ?? [];
 
     // $hasShipping = !empty($shippingLines);
-    // $hasLogoItem = collect($items)->contains(function ($item) {
-    //     return isset($item['title']) && stripos($item['title'], 'logo') !== false;
-    // });
+     $hasLogoItem = collect($items)->contains(function ($item) {
+         return isset($item['title']) && stripos($item['title'], 'logo') !== false;
+     });
 
     
-    $sourceKey = $source . '_' . ($financial === 'paid' ? 'paid' : 'unpaid');
+    $sourceKey = $source . '_' . ($financial === 'paid' ? 'paid' : 'unpaid')  . ($hasLogoItem ? '_logo' : '');
 
 switch ($sourceKey) {
     case 'pos_paid':
@@ -42,12 +42,17 @@ switch ($sourceKey) {
     case 'phone_unpaid':
         $statusName = 'Phone order Started';
         break;
-    case 'admin_draft_order_paid':
+    case 'shopify_draft_order_paid':
         $statusName = 'Paid on Phone'; // Assuming same as phone order
         break;
-    case 'admin_draft_order_unpaid':
+    case 'shopify_draft_order_unpaid':
         $statusName = 'Draft Order';
         break;
+    case 'shopify_draft_order_paid_logo':
+        $statusName = 'Draft Order with Logo';
+        break;
+    case 'shopify_draft_order_unpaid_logo':
+        $statusName = 'Draft Order with Logo';
     default:
         $statusName = 'Custom order Started';
         break;
