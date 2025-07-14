@@ -53,15 +53,26 @@ switch ($sourceKey) {
         break;
     case 'shopify_draft_order_unpaid_logo':
         $statusName = 'Draft Order with Logo';
+    case 'pos_paid_logo':
+        $statusName = 'Paid in Store with Logo';
+        break;
+    case 'pos_unpaid_logo':
+        $statusName = 'POS order Started with Logo';
     default:
         $statusName = 'Custom order Started';
         break;
 }
 
-$statusId = DB::table('statuses')->where('name', $statusName)->value('id');
+    $staus = status::firstOrCreate(['name' => $statusName, 'color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]);
+
+    // Fetch the status ID
+    $status = DB::table('statuses')->where('name', $statusName)->first();
+    $statusId = $status->id ?? null;
+
+    // If status ID is found, return it
 
 if($statusId):
-    return $statusId;
+    
 else:
     return new \Exception("Status not found: $statusName");
 endif;
