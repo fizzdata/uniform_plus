@@ -97,7 +97,7 @@ class Shopify extends Model
         return $connect->json();
     }
 
-    public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price,order_status_url, source_name,financial_status,fulfillment_status,tags,shipping_lines', $limit = 250){
+    public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price,order_status_url, source_name,financial_status,fulfillment_status,tags,shipping_lines,line_items', $limit = 250){
         $response = Http::withHeaders([
             'X-Shopify-Access-Token' => $this->access_token,
         ])->get("https://{$this->shop_domain}/admin/api/2024-10/orders.json", [

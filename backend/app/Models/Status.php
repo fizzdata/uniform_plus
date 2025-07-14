@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Status extends Model
 {
+
+    protected $fillable = ['name', 'color', 'description'];
+    
     public static function assign($order)
 {
 
