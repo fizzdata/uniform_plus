@@ -85,12 +85,14 @@
                         ? getStatusDisplay(
                             previousStatuses[order.shopify_order_id]
                           )?.name
+
                         : ''
                     "
                     @click="moveToPreviousStatus(order)"
                     class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     :disabled="!hasPreviousStatus(order)"
                   >
+
                     <template
                       v-if="
                         loadingOrderId ===
@@ -121,6 +123,7 @@
                     <template v-else>
                       <IconArrowLeft class="size-5" />
                     </template>
+
                   </button>
 
                   <span
@@ -179,6 +182,7 @@
                   </button>
                 </div>
               </td>
+
 
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${{ order.amount }}
@@ -239,7 +243,9 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const shop = localStorage.getItem("shop_name");
 const statuses = ref([]);
 const loadingOrderId = ref(null); // track the current loading order
+
 const previousStatuses = ref({});
+
 const {
   orders,
   fetchOrders,
@@ -345,6 +351,7 @@ const openOrderWindow = (url) => {
 
 // New hselper functions
 const hasPreviousStatus = (order) => {
+
   const previousStatusId = previousStatuses.value[order.shopify_order_id];
 
   return (
@@ -354,6 +361,7 @@ const hasPreviousStatus = (order) => {
   );
 };
 
+
 // const hasNextStatus = (order) => {
 //   const nextStatusId = order.status_id + 1;
 //   return statuses.value.some((s) => s.s_id === nextStatusId);
@@ -362,6 +370,7 @@ const hasPreviousStatus = (order) => {
 const getNextStatusName = (order) => {
   const status = statuses.value.find((s) => s.id === Number(order?.to_status));
   return status ? status.name : "";
+
 };
 
 const moveToNextStatus = async (order, status) => {
@@ -393,11 +402,13 @@ const moveToPreviousStatus = async (order) => {
     console.error("Error moving to previous status:", error);
   } finally {
     loadingOrderId.value = null;
+
   }
 };
 
 const updateOrderStatus = async (order, newStatusId, status) => {
   const originalStatus = order.status_id;
+
 
   try {
     const payload = {
@@ -417,11 +428,13 @@ const updateOrderStatus = async (order, newStatusId, status) => {
       await fetchOrders(false);
       toast.success(response?.data?.message || "Status updated successfully");
 
+
       const previousStatus = originalStatus;
 
       // Update the previous status for this order
 
       previousStatuses.value[order.shopify_order_id] = previousStatus;
+
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }
