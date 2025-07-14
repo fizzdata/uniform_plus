@@ -77,7 +77,7 @@ switch ($sourceKey) {
     // If status ID is found, return it
 
 if($statusId):
-    
+    return $statusId;
 else:
     return new \Exception("Status not found: $statusName");
 endif;
