@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Status extends Model
 {
+
+    protected $fillable = ['name', 'color', 'description'];
+
     public static function assign($order)
 {
 
@@ -63,7 +66,11 @@ switch ($sourceKey) {
         break;
 }
 
-    $staus = status::firstOrCreate(['name' => $statusName, 'color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]);
+
+    $staus = status::firstOrCreate(
+        ['name' => $statusName],
+    ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]);
+
 
     // Fetch the status ID
     $status = DB::table('statuses')->where('name', $statusName)->first();
