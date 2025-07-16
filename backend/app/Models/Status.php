@@ -67,11 +67,11 @@ switch ($sourceKey) {
 }
 
 
-
     $status = status::firstOrCreate(
         ['name' => $statusName],
     ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]
 );
+
 
     // Fetch the status ID
     
