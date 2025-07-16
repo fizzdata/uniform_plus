@@ -67,18 +67,21 @@ switch ($sourceKey) {
 }
 
 
-    $staus = status::firstOrCreate(
+    $status = status::firstOrCreate(
         ['name' => $statusName],
-    ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]);
+    ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]
+);
 
 
     // Fetch the status ID
-    $status = DB::table('statuses')->where('name', $statusName)->first();
-    $statusId = $status->id ?? null;
+    
+    $statusId = $status->id;
 
     // If status ID is found, return it
 
 if($statusId):
+
+    return $statusId;
     
 else:
     return new \Exception("Status not found: $statusName");
