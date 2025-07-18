@@ -9,7 +9,6 @@
       <h1 class="text-3xl font-bold text-gray-800">Welcome to the Dashboard</h1>
       <p class="mt-4 text-lg text-gray-600">Manage your shop efficiently.</p>
     </div>
-    <div>{{browserInfo}}</div>
   </div>
 </template>
 
@@ -62,12 +61,6 @@ onMounted(() => {
     missingParam.value = true;
   }
 
-  browserInfo.value = {
-      userAgent: navigator.userAgent,
-      supportsGrid: CSS.supports('display', 'grid'),
-      supportsFlexGap: CSS.supports('gap', '1rem')
-    };
-    console.log('POS Browser Info:', browserInfo.value);
   
 });
 
