@@ -17,7 +17,7 @@
     <button
       @click="submitExchange"
       :disabled="!itemFrom || !itemTo"
-      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition cursor-pointer"
     >
       Submit Exchange
     </button>
