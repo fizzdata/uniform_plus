@@ -105,8 +105,8 @@ try {
     public function exchange(Request $request)
     {
         $validate = Validator::make($request->all(), [
-            'item_from' => 'required|integer|exists:inventory,inventory_item_id',
-            'item_to' => 'required|integer|exists:inventory,inventory_item_id',
+            'item_from' => 'required|integer',
+            'item_to' => 'required|integer',
             'quantity' => 'required|integer|min:1'
         ]);
 
