@@ -5,13 +5,43 @@
     <label class="block mb-2">Item From:</label>
     <select v-model="itemFrom" class="w-full mb-4 border p-2 rounded">
       <option disabled value="">Select Item</option>
-      <option v-for="item in items" :key="item.id" :value="item.id">{{ item.title }}</option>
+      <optgroup v-for="item in items" :key="item.id" :label="item.title">
+        <option
+          v-for="variant in item.variants"
+          :key="variant.inventory_item_id"
+          :value="variant.inventory_item_id"
+        >
+          {{ variant.title || 'Default' }}
+        </option>
+          </optgroup>
     </select>
 
     <label class="block mb-2">Item To:</label>
     <select v-model="itemTo" class="w-full mb-4 border p-2 rounded">
       <option disabled value="">Select Item</option>
-      <option v-for="item in items" :key="item.id" :value="item.id">{{ item.title }}</option>
+      <optgroup v-for="item in items" :key="item.id" :label="item.title">
+        <option
+          v-for="variant in item.variants"
+          :key="variant.inventory_item_id"
+          :value="variant.inventory_item_id"
+        >
+          {{ variant.title || 'Default' }}
+        </option>
+      </optgroup>
+    </select>
+
+    <label class="block mb-2">Quantity:</label>
+    <input
+      type="number"
+      v-model.number="quantity"
+      min="1"
+      class="w-full mb-4 border p-2 rounded"
+    />
+
+    <label class="block mb-2">Location:</label>
+    <select v-model="location" class="w-full mb-4 border p-2 rounded">
+      <option disabled value="">Select Location</option>
+      <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
     </select>
 
     <button
@@ -38,6 +68,9 @@ const items = ref([]);
 const itemFrom = ref('');
 const itemTo = ref('');
 const message = ref('');
+const quantity = ref('1');
+const locations = ref([]);
+const location = ref('');
 
 const fetchProducts = async () => {
   try {
@@ -49,6 +82,18 @@ const fetchProducts = async () => {
   }
 };
 
+
+const fetchLocations = async () => {
+  try {
+    const res = await fetch(`${apiUrl}/api/inventory/locations?shop=${shop}`);
+    const data = await res.json();
+    locations.value = data.data;
+  } catch (error) {
+    console.error('Failed to fetch locations:', error);
+  }
+};
+
+
 const submitExchange = async () => {
   try {
     const res = await fetch(`${apiUrl}/api/inventory/exchange?shop=${shop}`, {
@@ -56,7 +101,9 @@ const submitExchange = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         item_from: itemFrom.value,
-        item_to: itemTo.value
+        item_to: itemTo.value,
+        quantity: quantity.value,
+        location_id: location.value
       })
     });
     const data = await res.json();
@@ -70,6 +117,8 @@ const submitExchange = async () => {
 
 onMounted(() => {
   fetchProducts();
+  fetchLocations();
+
 });
 </script>
 

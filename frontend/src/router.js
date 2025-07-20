@@ -9,7 +9,7 @@ import Exchange from "./views/Exchange.vue";
 
 
 const routes = [
-  { path: "/", component: Orders },
+  { path: "/", component: Dashboard },
   { path: "/orders", component: Orders },
   { path: "/dashboard", component: Dashboard },
   { path: "/install", component: install },
