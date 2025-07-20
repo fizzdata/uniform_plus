@@ -107,7 +107,8 @@ try {
         $validate = Validator::make($request->all(), [
             'item_from' => 'required|integer',
             'item_to' => 'required|integer',
-            'quantity' => 'required|integer|min:1'
+            'quantity' => 'required|integer|min:1',
+            'location_id' => 'required|integer'
         ]);
 
         if ($validate->fails()) {
