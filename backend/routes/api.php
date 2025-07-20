@@ -40,6 +40,7 @@ Route::delete('/purchase-orders/{order_id}', [PurchaseOrdersController::class, '
 Route::get('/inventory/locations', [InventoryController::class, 'get_locations'])->name('inventory.locations');
 Route::get('/inventory', [InventoryController::class, 'getInventory'])->name('inventory.get');
 Route::post('/inventory/receive', [InventoryController::class, 'receiveItems'])->name('inventory.receive');
-
+Route::post('/inventory/transfer', [InventoryController::class, 'transferItems'])->name('inventory.transfer');  
+Route::post('inventory/exchange', [InventoryController::class, 'exchange'])->name('inventory.exchange');
 
 });//end of middleware group

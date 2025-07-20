@@ -30,7 +30,7 @@
       <div
         v-for="(items, supplier) in groupedOrders"
         :key="supplier"
-        class="border rounded-lg"
+        class="border rounded-lg overflow-auto"
       >
         <!-- Group Header -->
         <div
@@ -50,7 +50,6 @@
               <span>
                 Received:
                 {{ formatNumber(productGroupTotals[supplier]?.totalReceived) }}
-
               </span>
             </div>
           </div>
@@ -70,7 +69,7 @@
         <!-- Group Body -->
         <table
           v-if="expandedGroups[supplier]"
-          class="min-w-full divide-y divide-gray-200 text-sm"
+          class="min-w-full divide-y divide-gray-200 text-sm overflow-scroll"
         >
           <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
@@ -568,11 +567,9 @@ const productGroupTotals = computed(() => {
   return totals;
 });
 
-
 const formatNumber = (num) => {
   return Number(num || 0).toLocaleString();
 };
-
 
 // New order form
 const newOrder = ref({

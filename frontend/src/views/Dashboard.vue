@@ -19,6 +19,7 @@ import { useRoute } from "vue-router";
 const route = useRoute();
 const missingParam = ref(false);
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
+const browserInfo = ref({});
 
 const installApp = async (shopName) => {
   if (!shopName) {
@@ -40,6 +41,7 @@ const installApp = async (shopName) => {
     if (data.success) {
       localStorage.setItem("shop_name", shopName); // Save only if valid
       console.log("Shop verified successfully.");
+      window.location.href = "/orders";
     } else {
       // Not valid – redirect to Shopify auth
 
@@ -59,5 +61,8 @@ onMounted(() => {
   } else {
     missingParam.value = true;
   }
+
+  
 });
+
 </script>

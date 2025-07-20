@@ -5,15 +5,18 @@ import install from "./views/Install.vue";
 import Inventory from "./views/Inventory.vue";
 import PurchaseOrder from "./views/PurchaseOrder.vue";
 import StatusPage from "./views/Status.vue";
+import Exchange from "./views/Exchange.vue";
 
 
 const routes = [
   { path: "/", component: Dashboard },
   { path: "/orders", component: Orders },
+  { path: "/dashboard", component: Dashboard },
   { path: "/install", component: install },
   { path: "/inventory", component: Inventory },
   { path: "/purchase-orders", component: PurchaseOrder },
   { path: "/status", component: StatusPage },
+  { path: "/exchange", component: Exchange },
 ];
 
 const router = createRouter({

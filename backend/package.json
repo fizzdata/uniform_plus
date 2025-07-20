@@ -12,5 +12,9 @@
         "laravel-vite-plugin": "^1.2.0",
         "tailwindcss": "^4.0.0",
         "vite": "^6.2.4"
+    },
+    "dependencies": {
+        "core-js": "^3.44.0",
+        "regenerator-runtime": "^0.14.1"
     }
 }

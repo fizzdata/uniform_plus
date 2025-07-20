@@ -78,21 +78,27 @@
                 {{ formatDate(order.created_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
+                <div class="status-container flex items-center gap-1">
                   <button
+                    @click="moveToPreviousStatus(order)"
+                    class="status-button flex items-center justify-center gap-1 text-gray-500 hover:bg-gray-100 rounded-md p-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    :disabled="!hasPreviousStatus(order)"
                     v-tooltip="
                       hasPreviousStatus(order)
                         ? getStatusDisplay(
                             previousStatuses[order.shopify_order_id]
                           )?.name
-
                         : ''
                     "
-                    @click="moveToPreviousStatus(order)"
-                    class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    :disabled="!hasPreviousStatus(order)"
+                    :aria-label="
+                      hasPreviousStatus(order)
+                        ? 'Move to previous status: ' +
+                          getStatusDisplay(
+                            previousStatuses[order.shopify_order_id]
+                          )?.name
+                        : 'No previous status'
+                    "
                   >
-
                     <template
                       v-if="
                         loadingOrderId ===
@@ -123,66 +129,79 @@
                     <template v-else>
                       <IconArrowLeft class="size-5" />
                     </template>
-
                   </button>
 
-                  <span
-                    v-tooltip="
-                      getStatusDisplay(order.status_id)?.description ||
-                      'No description'
-                    "
-                    :title="getStatusDisplay(order.status_id).description"
-                    :class="`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      getStatusDisplay(order.status_id)?.color
-                    } text-white`"
-                  >
-                    {{ getStatusDisplay(order.status_id)?.name }}
-                  </span>
+                  <div class="status-info flex flex-col items-center">
+                    <span
+                      v-tooltip="
+                        getStatusDisplay(order.status_id)?.description ||
+                        'No description'
+                      "
+                      :class="`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        getStatusDisplay(order.status_id)?.color
+                      } text-white`"
+                    >
+                      {{ getStatusDisplay(order.status_id)?.name }}
+                    </span>
+                    <span
+                      class="status-description text-xs text-gray-500 sm:hidden"
+                    >
+                      {{
+                        getStatusDisplay(order.status_id)?.description ||
+                        "No description"
+                      }}
+                    </span>
+                  </div>
 
-                  <button
+                  <template
                     v-if="
                       Array.isArray(order.next_status) &&
                       order.next_status.length
                     "
-                    v-for="status in order.next_status"
-                    :key="status.id || status"
-                    @click="moveToNextStatus(order, status)"
-                    :disabled="
-                      loadingOrderId &&
-                      loadingOrderId !== order.shopify_order_id
-                    "
-                    class="text-xs inline-flex gap-2 items-center cursor-pointer px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition"
-                    v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
                   >
-                    <template v-if="loadingOrderId === order.shopify_order_id">
-                      <svg
-                        class="animate-spin h-4 w-4 text-indigo-800"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
+                    <button
+                      v-for="status in order.next_status"
+                      :key="status.id || status"
+                      @click="moveToNextStatus(order, status)"
+                      :disabled="
+                        loadingOrderId &&
+                        loadingOrderId !== order.shopify_order_id
+                      "
+                      v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
+                      class="status-button flex items-center justify-center gap-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition px-3 py-1"
+                      :aria-label="'Move to ' + getNextStatusName(status)"
+                    >
+                      <template
+                        v-if="loadingOrderId === order.shopify_order_id"
                       >
-                        <circle
-                          class="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          stroke-width="4"
-                        />
-                        <path
-                          class="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8z"
-                        />
-                      </svg>
-                    </template>
-                    <template v-else>
-                      <IconArrowRight class="size-5" />
-                    </template>
-                  </button>
+                        <svg
+                          class="animate-spin h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                          />
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                          />
+                        </svg>
+                      </template>
+                      <template v-else>
+                        <IconArrowRight class="size-5 sm:ml-1" />
+                      </template>
+                    </button>
+                  </template>
                 </div>
               </td>
-
 
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${{ order.amount }}
@@ -351,7 +370,6 @@ const openOrderWindow = (url) => {
 
 // New hselper functions
 const hasPreviousStatus = (order) => {
-
   const previousStatusId = previousStatuses.value[order.shopify_order_id];
 
   return (
@@ -361,7 +379,6 @@ const hasPreviousStatus = (order) => {
   );
 };
 
-
 // const hasNextStatus = (order) => {
 //   const nextStatusId = order.status_id + 1;
 //   return statuses.value.some((s) => s.s_id === nextStatusId);
@@ -370,7 +387,6 @@ const hasPreviousStatus = (order) => {
 const getNextStatusName = (order) => {
   const status = statuses.value.find((s) => s.id === Number(order?.to_status));
   return status ? status.name : "";
-
 };
 
 const moveToNextStatus = async (order, status) => {
@@ -402,13 +418,11 @@ const moveToPreviousStatus = async (order) => {
     console.error("Error moving to previous status:", error);
   } finally {
     loadingOrderId.value = null;
-
   }
 };
 
 const updateOrderStatus = async (order, newStatusId, status) => {
   const originalStatus = order.status_id;
-
 
   try {
     const payload = {
@@ -428,13 +442,11 @@ const updateOrderStatus = async (order, newStatusId, status) => {
       await fetchOrders(false);
       toast.success(response?.data?.message || "Status updated successfully");
 
-
       const previousStatus = originalStatus;
 
       // Update the previous status for this order
 
       previousStatuses.value[order.shopify_order_id] = previousStatus;
-
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }
@@ -449,3 +461,20 @@ onMounted(async () => {
   await fetchOrders();
 });
 </script>
+
+<style scoped>
+@media (max-width: 640px) {
+  .status-container {
+    @apply flex-wrap gap-2;
+  }
+  .status-button {
+    @apply px-3 py-2 text-sm min-w-[120px];
+  }
+  .status-info {
+    @apply flex-col items-start w-full mt-1;
+  }
+  .status-description {
+    @apply text-xs text-gray-500 mt-1;
+  }
+}
+</style>

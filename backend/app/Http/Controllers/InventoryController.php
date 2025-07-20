@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Shopify;
+use App\Models\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
-use App\Models\Inventory;
-use App\Models\Shopify;
+use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
@@ -99,5 +100,57 @@ try {
             'data' => $locations,
             'success' => true
         ]);
+    }
+
+    public function exchange(Request $request)
+    {
+        $validate = Validator::make($request->all(), [
+            'item_from' => 'required|integer',
+            'item_to' => 'required|integer',
+            'quantity' => 'required|integer|min:1',
+            'location_id' => 'required|integer'
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json(['error' => $validate->errors()], 422);
+        }
+        try{
+
+        $shop = new Shopify($request->shop['id']);
+
+        // Adjust inventory levels
+        $shop->adjust_inventory_level($request->item_from, $request->location_id, -$request->quantity);
+        $shop->adjust_inventory_level($request->item_to, $request->location_id, $request->quantity);
+
+        // Log the exchange action
+        DB::table('inventory_actions')->insert([
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $request->item_from,
+            'shopify_location_id_from' => null,
+            'shopify_location_id_to' => $request->location_id,
+            'quantity' => -$request->quantity,
+            'action_type' => 'Adjust',
+            'performed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        DB::table('inventory_actions')->insert([
+            'shop_id' => $request->shop['id'],
+            'inventory_item_id' => $request->item_to,
+            'shopify_location_id_from' => null,
+            'shopify_location_id_to' => $request->location_id,
+            'quantity' => $request->quantity,
+            'action_type' => 'Adjust',
+            'performed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Items exchanged successfully']);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
     }
 }

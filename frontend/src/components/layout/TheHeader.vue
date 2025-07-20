@@ -7,10 +7,12 @@ const shopName = ref(localStorage.getItem("shop_name") || null);
 
 const mobileMenuOpen = ref(false);
 const navigation = [
+  { name: "Dashboard", href: "/dashboard" },
   { name: "Purchase Orders", href: "/purchase-orders" },
   { name: "Orders", href: "/orders" },
   { name: "Statuses", href: "/status" },
   { name: "Inventory", href: "/inventory" },
+  { name: "Exchange", href: "/exchange" },
 ];
 </script>
 
