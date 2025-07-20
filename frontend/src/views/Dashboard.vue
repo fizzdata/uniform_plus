@@ -14,9 +14,11 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
+const router = useRouter();
+
 const missingParam = ref(false);
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const browserInfo = ref({});
@@ -41,7 +43,10 @@ const installApp = async (shopName) => {
     if (data.success) {
       localStorage.setItem("shop_name", shopName); // Save only if valid
       console.log("Shop verified successfully.");
-      window.location.href = "/orders";
+
+      
+      router.push('/orders');
+
     } else {
       // Not valid – redirect to Shopify auth
 
@@ -49,7 +54,7 @@ const installApp = async (shopName) => {
     }
   } catch (error) {
     console.error("Failed to install app:", error);
-    alert("Something went wrong. Please try again.");
+    //alert("Something went wrong. Please try again.");
   }
 };
 
