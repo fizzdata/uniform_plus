@@ -43,9 +43,9 @@ const installApp = async (shopName) => {
     if (data.success) {
       localStorage.setItem("shop_name", shopName); // Save only if valid
       console.log("Shop verified successfully.");
+
       
       router.push('/orders');
-
 
     } else {
       // Not valid – redirect to Shopify auth
