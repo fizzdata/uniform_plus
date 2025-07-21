@@ -128,6 +128,17 @@
                     </template>
                     <template v-else>
                       <IconArrowLeft class="size-5" />
+                      <span
+                        class="status-description text-xs text-gray-500 sm:hidden"
+                      >
+                        {{
+                          hasPreviousStatus(order)
+                            ? getStatusDisplay(
+                                previousStatuses[order.shopify_order_id]
+                              )?.name
+                            : ""
+                        }}
+                      </span>
                     </template>
                   </button>
 
@@ -143,14 +154,14 @@
                     >
                       {{ getStatusDisplay(order.status_id)?.name }}
                     </span>
-                    <span
+                    <!-- <span
                       class="status-description text-xs text-gray-500 sm:hidden"
                     >
                       {{
                         getStatusDisplay(order.status_id)?.description ||
                         "No description"
                       }}
-                    </span>
+                    </span> -->
                   </div>
 
                   <template
@@ -197,6 +208,11 @@
                       </template>
                       <template v-else>
                         <IconArrowRight class="size-5 sm:ml-1" />
+                        <span
+                          class="status-description text-xs text-gray-500 sm:hidden"
+                        >
+                          {{ "Move to" + " " + getNextStatusName(status) }}
+                        </span>
                       </template>
                     </button>
                   </template>
