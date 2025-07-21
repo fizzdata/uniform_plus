@@ -180,7 +180,7 @@
                       "
                       v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
                       class="status-button flex items-center justify-center gap-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition px-3 py-1"
-                      :aria-label="'Move to ' + getNextStatusName(status)"
+                      :aria-label="'Move to' + ' ' + getNextStatusName(status)"
                     >
                       <template
                         v-if="loadingOrderId === order.shopify_order_id"
@@ -211,7 +211,7 @@
                         <span
                           class="status-description text-xs text-gray-500 sm:hidden"
                         >
-                          {{ "Move to" + " " + getNextStatusName(status) }}
+                          {{ getNextStatusName(status) }}
                         </span>
                       </template>
                     </button>
