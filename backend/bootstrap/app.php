@@ -19,9 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
     $exceptions->reportable(function (Throwable $e) {
           Log::channel('slack')->error($e->getMessage(),[
-              'file' => $e->getFile(),
-              'Line' => $e->getLine(),
-              'code' => $e->getCode(),
+               'File' => $e->getFile(),
+                'Line' => $e->getLine(),
+                'Method' => Request::method(),
+                'URL' => (string) Request::fullUrl(),
+                'IP' => Request::ip(),
+                'Time' => now()->toDateTimeString(),
           ]);
       });
     })->create();
