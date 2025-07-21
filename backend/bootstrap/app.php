@@ -1,9 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Log;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -19,9 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
     $exceptions->reportable(function (Throwable $e) {
           Log::channel('slack')->error($e->getMessage(),[
-              'file' => $e->getFile(),
-              'Line' => $e->getLine(),
-              'code' => $e->getCode(),
+               'File' => $e->getFile(),
+                'Line' => $e->getLine(),
+                'Method' => Request::method(),
+                'URL' => (string) Request::fullUrl(),
+                'IP' => Request::ip(),
+                'Time' => now()->toDateTimeString(),
           ]);
       });
     })->create();

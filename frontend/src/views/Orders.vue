@@ -128,6 +128,17 @@
                     </template>
                     <template v-else>
                       <IconArrowLeft class="size-5" />
+                      <span
+                        class="status-description text-xs text-gray-500 sm:hidden"
+                      >
+                        {{
+                          hasPreviousStatus(order)
+                            ? getStatusDisplay(
+                                previousStatuses[order.shopify_order_id]
+                              )?.name
+                            : ""
+                        }}
+                      </span>
                     </template>
                   </button>
 
@@ -143,14 +154,14 @@
                     >
                       {{ getStatusDisplay(order.status_id)?.name }}
                     </span>
-                    <span
+                    <!-- <span
                       class="status-description text-xs text-gray-500 sm:hidden"
                     >
                       {{
                         getStatusDisplay(order.status_id)?.description ||
                         "No description"
                       }}
-                    </span>
+                    </span> -->
                   </div>
 
                   <template
@@ -169,7 +180,7 @@
                       "
                       v-tooltip="'Move to' + ' ' + getNextStatusName(status)"
                       class="status-button flex items-center justify-center gap-1 bg-indigo-100 text-indigo-800 rounded-md hover:bg-indigo-200 transition px-3 py-1"
-                      :aria-label="'Move to ' + getNextStatusName(status)"
+                      :aria-label="'Move to' + ' ' + getNextStatusName(status)"
                     >
                       <template
                         v-if="loadingOrderId === order.shopify_order_id"
@@ -197,6 +208,11 @@
                       </template>
                       <template v-else>
                         <IconArrowRight class="size-5 sm:ml-1" />
+                        <span
+                          class="status-description text-xs text-gray-500 sm:hidden"
+                        >
+                          {{ getNextStatusName(status) }}
+                        </span>
                       </template>
                     </button>
                   </template>
