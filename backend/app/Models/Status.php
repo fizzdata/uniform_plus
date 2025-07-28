@@ -23,7 +23,9 @@ class Status extends Model
          return isset($item['title']) && stripos($item['title'], 'logo') !== false;
      });
 
+
     $has_phone_in_notes = isset($order['note']) && preg_match('/\bphone\b/i', $order['note']);
+
 
     if($has_phone_in_notes):
         $source = 'phone';
