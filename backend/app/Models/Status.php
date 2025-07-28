@@ -24,8 +24,12 @@ class Status extends Model
      });
 
     $has_phone_in_notes = isset($order['note']) && stripos($order['note'], 'phone') !== false;
+
+    if($has_phone_in_notes):
+        $source = 'phone';
+    endif;
     
-    $sourceKey = $source . '_' . ($financial === 'paid' ? 'paid' : 'unpaid')  . ($hasLogoItem ? '_logo' : '') . ($has_phone_in_notes ? '_phone' : '');
+    $sourceKey = $source . '_' . ($financial === 'paid' ? 'paid' : 'unpaid')  . ($hasLogoItem ? '_logo' : '');
 
 
 switch ($sourceKey) {
@@ -33,78 +37,56 @@ switch ($sourceKey) {
     case 'pos_paid':
         $statusName = 'Paid in Store';
         break;
-    case 'pos_paid_phone':
-        $statusName = 'Paid in Store (Phone)';
-        break;
     case 'pos_paid_logo':
         $statusName = 'Paid in Store with Logo';
-        break;
-    case 'pos_paid_logo_phone':
-        $statusName = 'Paid in Store with Logo (Phone)';
         break;
     case 'pos_unpaid':
         $statusName = 'POS order Started';
         break;
-    case 'pos_unpaid_phone':
-        $statusName = 'POS order Started (Phone)';
-        break;
     case 'pos_unpaid_logo':
         $statusName = 'POS order Started with Logo';
-        break;
-    case 'pos_unpaid_logo_phone':
-        $statusName = 'POS order Started with Logo (Phone)';
         break;
 
     // WEB
     case 'web_paid':
         $statusName = 'Paid on Website';
         break;
-    case 'web_paid_phone':
-        $statusName = 'Paid on Phone';
-        break;
     case 'web_paid_logo':
         $statusName = 'Paid on Website with Logo';
-        break;
-    case 'web_paid_logo_phone':
-        $statusName = 'Paid on Phone with Logo';
         break;
     case 'web_unpaid':
         $statusName = 'Web order Started';
         break;
-    case 'web_unpaid_phone':
-        $statusName = 'Phone order Started';
-        break;
     case 'web_unpaid_logo':
         $statusName = 'Web order Started with Logo';
-        break;
-    case 'web_unpaid_logo_phone':
-        $statusName = 'Phone order Started with Logo';
         break;
 
     // SHOPIFY DRAFT ORDER
     case 'shopify_draft_order_paid':
-        $statusName = 'Paid on Phone';
-        break;
-    case 'shopify_draft_order_paid_phone':
-        $statusName = 'Paid on Phone (Draft)';
+        $statusName = 'Draft Order Paid';
         break;
     case 'shopify_draft_order_paid_logo':
-        $statusName = 'Draft Order with Logo';
-        break;
-    case 'shopify_draft_order_paid_logo_phone':
-        $statusName = 'Draft Order with Logo (Phone)';
+        $statusName = 'Draft Order Paid with Logo';
         break;
     case 'shopify_draft_order_unpaid':
         $statusName = 'Draft Order';
         break;
-    case 'shopify_draft_order_unpaid_phone':
-        $statusName = 'Draft Order (Phone)';
-        break;
     case 'shopify_draft_order_unpaid_logo':
         $statusName = 'Draft Order with Logo';
         break;
-    case 'shopify_draft_order_unpaid_logo_phone':
-        $statusName = 'Draft Order with Logo (Phone)';
+
+    // PHONE (note overrides all other sources)
+    case 'phone_paid':
+        $statusName = 'Paid on Phone';
+        break;
+    case 'phone_paid_logo':
+        $statusName = 'Paid on Phone with Logo';
+        break;
+    case 'phone_unpaid':
+        $statusName = 'Phone order Started';
+        break;
+    case 'phone_unpaid_logo':
+        $statusName = 'Phone order Started with Logo';
         break;
 
     default:
@@ -113,9 +95,18 @@ switch ($sourceKey) {
 }
 
 
-    $status = status::firstOrCreate(
-        ['name' => $statusName],
-    ['color' => 'bg-teal-500', 'description' => 'Order status for ' . $statusName]
+$tailwindColors = [
+    'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
+    'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500',
+    'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500',
+    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500',
+    'bg-rose-500', 'bg-gray-500', 'bg-slate-500', 'bg-zinc-500'
+];
+$randomColor = $tailwindColors[array_rand($tailwindColors)];
+
+$status = status::firstOrCreate(
+    ['name' => $statusName],
+    ['color' => $randomColor, 'description' => 'Order status for ' . $statusName]
 );
 
 
