@@ -97,19 +97,27 @@ class Shopify extends Model
         return $connect->json();
     }
 
-public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price,order_status_url,source_name,financial_status,fulfillment_status,note,shipping_lines,line_items', $page_info = null, $limit = 50) {
+public function get_orders($page_info = null) {
 
 
 
     $url = "https://{$this->shop_domain}/admin/api/2024-10/orders.json";
+    $limit = 2;
+    $fields = 'id,name,customer,created_at,current_total_price,order_status_url,source_name,financial_status,fulfillment_status,note,shipping_lines,line_items';
+
     $params = [
-        'status' => $status,
         'fields' => $fields,
-        'limit'  => $limit,
+        'limit' => $limit,
     ];
-    
+
     if ($page_info) {
+        // Only send page_info — no filters allowed
         $params['page_info'] = $page_info;
+    } else {
+        // First request — include filters
+        $params['status'] = 'any';
+        $params['financial_status'] = 'any';
+        $params['fulfillment_status'] = 'any';
     }
 
    $response = Http::withHeaders([
@@ -119,20 +127,20 @@ public function get_orders($status = 'any', $fields = 'id,name,customer,created_
     if ($response->failed()) {
         throw new \Exception('Failed to fetch orders');
     }
-
+    
+    
     $orders = $response['orders'];
     $linkHeader = $response->header('Link');
     $nextPageInfo = null;
-
+    
     if ($linkHeader && preg_match('/<[^>]+page_info=([^&>]+)[^>]*>; rel="next"/', $linkHeader, $matches)) {
         $nextPageInfo = $matches[1];
     }
 
-    return response()->json([
+    return [
         'orders' => $orders,
         'next_page_info' => $nextPageInfo,
-        'has_more' => $nextPageInfo !== null
-    ]);
+    ];
 
 }
         public function set_order_status($orderId, $status, $key = 'status', $namespace = 'custom_status', $type = 'single_line_text_field')

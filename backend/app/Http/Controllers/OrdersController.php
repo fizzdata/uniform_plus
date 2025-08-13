@@ -19,7 +19,9 @@ class OrdersController extends Controller
        $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
 
     // Fetch orders from Shopify
-    $orders = $shop->get_orders(); 
+    $orders_info = $shop->get_orders($request->page_info); 
+    
+    $orders = $orders_info['orders'];
 
 
 
@@ -76,7 +78,7 @@ class OrdersController extends Controller
         ];
     endforeach;
 
-    return response()->json(['orders' => $formattedOrders, 'next_page_info' => $orders['next_page_info'] ?? null], 200);
+    return response()->json(['orders' => $formattedOrders, 'next_page_info' => $orders_info['next_page_info']], 200);
 
     }
 }
