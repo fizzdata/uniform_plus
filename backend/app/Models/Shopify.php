@@ -99,8 +99,6 @@ class Shopify extends Model
 
 public function get_orders($page_info = null) {
 
-
-
     $url = "https://{$this->shop_domain}/admin/api/2024-10/orders.json";
     $limit = 20; // Default limit for pagination
     $fields = 'id,name,customer,created_at,current_total_price,order_status_url,source_name,financial_status,fulfillment_status,note,shipping_lines,line_items';
@@ -119,6 +117,7 @@ public function get_orders($page_info = null) {
         $params['financial_status'] = 'any';
         $params['fulfillment_status'] = 'any';
     }
+
 
    $response = Http::withHeaders([
         'X-Shopify-Access-Token' => $this->access_token,
