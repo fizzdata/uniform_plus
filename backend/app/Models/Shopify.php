@@ -97,22 +97,51 @@ class Shopify extends Model
         return $connect->json();
     }
 
-    public function get_orders($status = 'any', $fields = 'id,name,customer,created_at,current_total_price,order_status_url, source_name,financial_status,fulfillment_status,note,shipping_lines,line_items', $limit = 250){
-        $response = Http::withHeaders([
-            'X-Shopify-Access-Token' => $this->access_token,
-        ])->get("https://{$this->shop_domain}/admin/api/2024-10/orders.json", [
-            'status' => $status,
-            'fields' => $fields,
-            'limit' => $limit
-        ]);
-        
-        if ($response->failed()):
-            throw new \Exception("Failed to get Shopify orders");
-        endif;
+public function get_orders($page_info = null) {
 
-        return $response->json()['orders'];
+    $url = "https://{$this->shop_domain}/admin/api/2024-10/orders.json";
+    $limit = 20; // Default limit for pagination
+    $fields = 'id,name,customer,created_at,current_total_price,order_status_url,source_name,financial_status,fulfillment_status,note,shipping_lines,line_items';
+
+    $params = [
+        'fields' => $fields,
+        'limit' => $limit,
+    ];
+
+    if ($page_info) {
+        // Only send page_info — no filters allowed
+        $params['page_info'] = $page_info;
+    } else {
+        // First request — include filters
+        $params['status'] = 'any';
+        $params['financial_status'] = 'any';
+        $params['fulfillment_status'] = 'any';
     }
 
+
+   $response = Http::withHeaders([
+        'X-Shopify-Access-Token' => $this->access_token,
+    ])->get($url, $params);
+
+    if ($response->failed()) {
+        throw new \Exception('Failed to fetch orders');
+    }
+    
+    
+    $orders = $response['orders'];
+    $linkHeader = $response->header('Link');
+    $nextPageInfo = null;
+    
+    if ($linkHeader && preg_match('/<[^>]+page_info=([^&>]+)[^>]*>; rel="next"/', $linkHeader, $matches)) {
+        $nextPageInfo = $matches[1];
+    }
+
+    return [
+        'orders' => $orders,
+        'next_page_info' => $nextPageInfo,
+    ];
+
+}
         public function set_order_status($orderId, $status, $key = 'status', $namespace = 'custom_status', $type = 'single_line_text_field')
 
 {
@@ -145,6 +174,16 @@ class Shopify extends Model
     }
 
     return $response->json();
+}
+
+     public function orders_count(){
+                $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $this->access_token,
+        ])->get("https://{$this->shop_domain}/admin/api/2024-10/orders/count.json", [
+            'status' => 'any'
+        ]);
+        
+        return $response['count'];
 }
     
         

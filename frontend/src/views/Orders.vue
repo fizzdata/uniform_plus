@@ -5,7 +5,7 @@
       <h2 class="text-2xl font-bold text-gray-800">Orders</h2>
       <div class="flex items-center space-x-4">
         <button
-          @click="fetchOrders"
+          @click="fetchOrders()"
           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
           :disabled="loading"
         >
@@ -14,13 +14,13 @@
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="text-center py-8">
+    <!-- Loading State (only for initial load) -->
+    <div v-if="loading && allOrders.length === 0" class="text-center py-8">
       <p>Loading orders...</p>
     </div>
 
     <!-- Orders Table -->
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+    <div v-if="allOrders.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -62,8 +62,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              v-for="order in orders"
-              :key="order.id"
+              v-for="order in allOrders" :key="order.id"
               class="hover:bg-gray-50"
             >
               <td
@@ -237,6 +236,17 @@
         </table>
       </div>
     </div>
+<!-- //load more button -->
+    <div class="flex justify-center mt-6">
+      <button
+        v-if="nextPageInfo"
+        @click="fetchOrders(nextPageInfo, true)"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+        :disabled="loadingMore"
+      >
+        {{ loadingMore ? "Loading..." : "Load More Orders" }}
+      </button>
+    </div>
 
     <!-- Pagination -->
     <!-- <div class="flex justify-between items-center mt-4">
@@ -279,11 +289,15 @@ const shop = localStorage.getItem("shop_name");
 const statuses = ref([]);
 const loadingOrderId = ref(null); // track the current loading order
 
+const nextPageInfo = ref(null);
+const allOrders = ref([]);
+const loadingMore = ref(false);
+
 const previousStatuses = ref({});
 
 const {
-  orders,
-  fetchOrders,
+  //orders,
+  //fetchOrders,
   loading,
   updateOrderStatus: updateStatus,
   currentPage,
@@ -472,6 +486,43 @@ const updateOrderStatus = async (order, newStatusId, status) => {
   }
 };
 
+const fetchOrders = async (pageInfo = null, isLoadMore = false) => {
+  if (isLoadMore) {
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
+  }
+
+  try {
+    const response = await axios.get(`${apiUrl}/api/shopify/orders?shop=${shop}`, {
+      params: {
+        shop,
+        ...(pageInfo ? { page_info: pageInfo } : {}),
+      },
+    });
+
+    const fetchedOrders = response.data.orders || [];
+
+    if (pageInfo) {
+      // Append new orders
+      allOrders.value = [...allOrders.value, ...fetchedOrders];
+    } else {
+      // First load — replace
+      allOrders.value = fetchedOrders;
+    }
+
+    nextPageInfo.value = response.data.next_page_info || null;
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    toast.error("Failed to load orders");
+  } finally {
+    if (isLoadMore) {
+      loadingMore.value = false;
+    } else {
+      loading.value = false;
+    }
+  }
+};
 onMounted(async () => {
   await fetchStatuses();
   await fetchOrders();
