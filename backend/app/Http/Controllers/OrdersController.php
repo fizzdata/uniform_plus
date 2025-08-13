@@ -76,7 +76,7 @@ class OrdersController extends Controller
         ];
     endforeach;
 
-    return response()->json(['orders' => $formattedOrders]);
+    return response()->json(['orders' => $formattedOrders, 'next_page_info' => $orders['next_page_info'] ?? null], 200);
 
     }
 }
