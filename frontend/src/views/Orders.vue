@@ -62,8 +62,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              v-for="order in orders"
-              :key="order.id"
+              v-for="order in allOrders" :key="order.id"
               class="hover:bg-gray-50"
             >
               <td
@@ -237,6 +236,17 @@
         </table>
       </div>
     </div>
+<!-- //load more button -->
+    <div class="flex justify-center mt-6">
+  <button
+    v-if="nextPageInfo"
+    @click="fetchOrders(nextPageInfo, true)"
+    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+    :disabled="loading"
+  >
+    {{ loading ? "Loading..." : "Load More Orders" }}
+  </button>
+</div>
 
     <!-- Pagination -->
     <!-- <div class="flex justify-between items-center mt-4">
@@ -279,11 +289,14 @@ const shop = localStorage.getItem("shop_name");
 const statuses = ref([]);
 const loadingOrderId = ref(null); // track the current loading order
 
+const nextPageInfo = ref(null);
+const allOrders = ref([]);
+
 const previousStatuses = ref({});
 
 const {
-  orders,
-  fetchOrders,
+  //orders,
+  //fetchOrders,
   loading,
   updateOrderStatus: updateStatus,
   currentPage,
@@ -472,6 +485,35 @@ const updateOrderStatus = async (order, newStatusId, status) => {
   }
 };
 
+const fetchOrders = async (pageInfo = null) => {
+  loading.value = true;
+
+  try {
+    const response = await axios.get(`${apiUrl}/api/shopify/orders?shop=${shop}`, {
+      params: {
+        shop,
+        ...(pageInfo ? { page_info: pageInfo } : {}),
+      },
+    });
+
+    const fetchedOrders = response.data.orders || [];
+
+    if (pageInfo) {
+      // Append new orders
+      allOrders.value = [...allOrders.value, ...fetchedOrders];
+    } else {
+      // First load — replace
+      allOrders.value = fetchedOrders;
+    }
+
+    nextPageInfo.value = response.data.next_page_info || null;
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    toast.error("Failed to load orders");
+  } finally {
+    loading.value = false;
+  }
+};
 onMounted(async () => {
   await fetchStatuses();
   await fetchOrders();
