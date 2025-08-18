@@ -20,7 +20,11 @@
     </div>
 
     <!-- Orders Table -->
-    <div v-if="allOrders.length > 0" class="bg-white shadow rounded-lg overflow-hidden">
+    <div
+      v-if="allOrders.length > 0"
+      class="bg-white shadow rounded-lg overflow-hidden"
+    >
+
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -62,7 +66,9 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              v-for="order in allOrders" :key="order.id"
+              v-for="order in allOrders"
+              :key="order.id"
+
               class="hover:bg-gray-50"
             >
               <td
@@ -236,7 +242,8 @@
         </table>
       </div>
     </div>
-<!-- //load more button -->
+    <!-- //load more button -->
+
     <div class="flex justify-center mt-6">
       <button
         v-if="nextPageInfo"
@@ -469,7 +476,7 @@ const updateOrderStatus = async (order, newStatusId, status) => {
 
     if (response?.data?.success) {
       order.status_id = newStatusId;
-      await fetchOrders(false);
+      // await fetchOrders(false);
       toast.success(response?.data?.message || "Status updated successfully");
 
       const previousStatus = originalStatus;
@@ -477,6 +484,7 @@ const updateOrderStatus = async (order, newStatusId, status) => {
       // Update the previous status for this order
 
       previousStatuses.value[order.shopify_order_id] = previousStatus;
+      order.next_status = response?.data?.new_next_status;
     } else {
       toast.error(response?.data?.message || "Failed to update status");
     }
@@ -494,12 +502,15 @@ const fetchOrders = async (pageInfo = null, isLoadMore = false) => {
   }
 
   try {
-    const response = await axios.get(`${apiUrl}/api/shopify/orders?shop=${shop}`, {
-      params: {
-        shop,
-        ...(pageInfo ? { page_info: pageInfo } : {}),
-      },
-    });
+    const response = await axios.get(
+      `${apiUrl}/api/shopify/orders?shop=${shop}`,
+      {
+        params: {
+          ...(pageInfo ? { page_info: pageInfo } : {}),
+        },
+      }
+    );
+
 
     const fetchedOrders = response.data.orders || [];
 

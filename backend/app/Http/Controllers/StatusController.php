@@ -112,9 +112,17 @@ class StatusController extends Controller
 
         // Update the order status in Shopify
         $shop->set_order_status($request->order_id, $nextStatusExist);
+            $new_next_status = DB::table('order_status_transitions')
+        ->select('to_status')
+        ->where('from_status', $nextStatus)
+        ->get();
 
         
-        return response()->json(['success' => true, 'message' => 'Status updated successfully'], 200);
+        return response()->json([
+            'success' => true, 
+            'message' => 'Status updated successfully',
+            'new_next_status'=> $new_next_status
+        ], 200);
 
     } catch (\Exception $e) {
         // // Log the error message
