@@ -24,6 +24,7 @@
       v-if="allOrders.length > 0"
       class="bg-white shadow rounded-lg overflow-hidden"
     >
+
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -67,6 +68,7 @@
             <tr
               v-for="order in allOrders"
               :key="order.id"
+
               class="hover:bg-gray-50"
             >
               <td
@@ -241,6 +243,7 @@
       </div>
     </div>
     <!-- //load more button -->
+
     <div class="flex justify-center mt-6">
       <button
         v-if="nextPageInfo"
@@ -507,6 +510,7 @@ const fetchOrders = async (pageInfo = null, isLoadMore = false) => {
         },
       }
     );
+
 
     const fetchedOrders = response.data.orders || [];
 
