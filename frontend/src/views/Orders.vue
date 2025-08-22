@@ -231,7 +231,7 @@
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
               >
                 <button
-                  @click="openOrderWindow(order.link)"
+                  @click="openOrderModal(order)"
                   class="text-gray-600 hover:text-gray-900"
                 >
                   View
@@ -243,16 +243,134 @@
       </div>
     </div>
     <!-- //load more button -->
+    <!-- Order Details Card Modal -->
+    <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-0 relative border border-gray-200">
+        <div class="sticky top-0 z-10 bg-white px-8 pt-8 flex justify-end">
+          <button @click="closeOrderModal" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+        </div>
+        <div class="max-h-[80vh] overflow-y-auto px-8 pb-8">
+        <button @click="closeOrderModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+          <h2 class="text-2xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
+          <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4m-5 4h18"/></svg>
+          Order {{ orderCard.name || orderCard.id }}
+        </h2>
+          <div v-if="orderDetailsLoading" class="flex justify-center items-center py-8">
+          <svg class="animate-spin h-6 w-6 text-indigo-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          <span class="text-indigo-700 font-semibold">Loading...</span>
+        </div>
+          <div v-else-if="orderCard">
+          <!-- Customer Section -->
+          <section class="mb-6 pb-4 border-b border-gray-100">
+            <h3 class="font-semibold mb-3 text-lg text-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              Customer
+            </h3>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Name:</span>
+                <span class="font-medium">{{ orderCard.customer?.first_name || '—' }} {{ orderCard.customer?.last_name || '' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Email:</span>
+                <span>{{ orderCard.customer?.email || '—' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Phone:</span>
+                <span>{{ orderCard.customer?.phone || '—' }}</span>
+              </div>
+              <div v-if="orderCard.shipping_address" class="flex flex-col gap-1 mt-2 p-2 bg-gray-50 rounded">
+                <span class="font-semibold text-gray-700">Shipping Address:</span>
+                <span>{{ orderCard.shipping_address.name }}</span>
+                <span>{{ orderCard.shipping_address.address1 }} {{ orderCard.shipping_address.address2 }}</span>
+                <span>{{ orderCard.shipping_address.city }}, {{ orderCard.shipping_address.province }} {{ orderCard.shipping_address.zip }}</span>
+                <span>{{ orderCard.shipping_address.country }}</span>
+                <span v-if="orderCard.shipping_address.phone">Phone: {{ orderCard.shipping_address.phone }}</span>
+              </div>
+            </div>
+          </section>
 
-    <div class="flex justify-center mt-6">
-      <button
-        v-if="nextPageInfo"
-        @click="fetchOrders(nextPageInfo, true)"
-        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
-        :disabled="loadingMore"
-      >
-        {{ loadingMore ? "Loading..." : "Load More Orders" }}
-      </button>
+          <!-- Order Info Section -->
+          <section class="mb-6 pb-4 border-b border-gray-100">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Date:</span>
+                <span class="font-medium">{{ formatDate(orderCard.created_at) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Total:</span>
+                <span class="font-bold text-green-600">{{ orderCard.total_price }} {{ orderCard.currency }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Note:</span>
+                <span>{{ orderCard.note || '—' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Tags:</span>
+                <span>{{ orderCard.tags || '—' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Items Section -->
+          <section class="mb-6 pb-4 border-b border-gray-100">
+            <h3 class="font-semibold mb-3 text-lg text-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/></svg>
+              Items
+            </h3>
+            <ul class="divide-y divide-gray-100">
+              <li v-for="item in orderCard.line_items" :key="item.id" class="py-3 flex flex-col gap-1">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold text-gray-800">{{ item.title }}</span>
+                  <span class="text-xs text-gray-500" v-if="item.variant_title">({{ item.variant_title }})</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>Qty: <span class="font-medium">{{ item.quantity }}</span></span>
+                  <span>Price: <span class="font-medium">{{ item.price }} {{ orderCard.currency }}</span></span>
+                </div>
+                <div v-if="item.vendor" class="text-xs text-gray-400">Vendor: {{ item.vendor }}</div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Payment, Tax & Status Section -->
+          <section class="mb-2">
+            <h3 class="font-semibold mb-3 text-lg text-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
+              Payment, Tax & Status
+            </h3>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Status:</span>
+                <span class="font-semibold text-indigo-700">{{ orderCard.status }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Payment Gateway:</span>
+                <span>
+                  <span v-if="orderCard.payment_gateway_names && orderCard.payment_gateway_names.length">
+                    {{ orderCard.payment_gateway_names.join(', ') }}
+                  </span>
+                  <span v-else>—</span>
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Financial Status:</span>
+                <span>{{ orderCard.financial_status || '—' }}</span>
+              </div>
+              <div class="flex flex-col gap-1 mt-2" v-if="orderCard.tax_lines && orderCard.tax_lines.length">
+                <span class="font-semibold text-gray-700">Taxes:</span>
+                <ul class="ml-2">
+                  <li v-for="tax in orderCard.tax_lines" :key="tax.title" class="text-sm text-gray-600">
+                    {{ tax.title }}: {{ tax.price }} {{ orderCard.currency }} ({{ (tax.rate * 100).toFixed(2) }}%)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </div>
+          <div v-else class="text-center py-8 text-red-500 font-bold">No details found.</div>
+        </div>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -538,6 +656,61 @@ onMounted(async () => {
   await fetchStatuses();
   await fetchOrders();
 });
+
+const showOrderModal = ref(false);
+const orderDetailsLoading = ref(false);
+const orderCard = ref({
+  id: null,
+  name: '',
+  status: '',
+  created_at: '',
+  total_price: '',
+  currency: '',
+  customer: null,
+  line_items: [],
+  note: '',
+  tags: '',
+  order_status_url: '',
+});
+
+function mapOrderData(rawOrder) {
+  return {
+    id: rawOrder.id,
+    name: rawOrder.name,
+    status: rawOrder.fulfillment_status || rawOrder.financial_status,
+    financial_status: rawOrder.financial_status,
+    created_at: rawOrder.created_at,
+    total_price: rawOrder.total_price,
+    currency: rawOrder.currency,
+    customer: rawOrder.customer || {},
+    line_items: rawOrder.line_items || [],
+    note: rawOrder.note,
+    tags: rawOrder.tags,
+    order_status_url: rawOrder.order_status_url,
+    payment_gateway_names: rawOrder.payment_gateway_names || [],
+    shipping_address: rawOrder.shipping_address || null,
+    tax_lines: rawOrder.tax_lines || [],
+  };
+}
+
+const openOrderModal = async (order) => {
+  showOrderModal.value = true;
+  orderDetailsLoading.value = true;
+  try {
+    const response = await axios.get(`${apiUrl}/api/shopify/order/${order.shopify_order_id}?shop=${shop}`);
+    orderCard.value = mapOrderData(response.data.order);
+  } catch (error) {
+    toast.error("Failed to fetch order details");
+    orderCard.value = null;
+  } finally {
+    orderDetailsLoading.value = false;
+  }
+};
+
+const closeOrderModal = () => {
+  showOrderModal.value = false;
+  orderCard.value = null;
+};
 </script>
 
 <style scoped>

@@ -23,6 +23,7 @@ Route::get('/shopify/install', function (Request $request) {
 
 Route::post('/orders/update-status/{order_id}', [StatusController::class, 'updateStatus'])->name('orders.updateStatus');
 Route::get('/shopify/orders', [OrdersController::class, 'index'])->name('orders.index');
+Route::get('/shopify/order/{shopify_order_id}', [OrdersController::class, 'show'])->name('orders.show');
 Route::get('/statuses', [StatusController::class, 'getStatus'])->name('statuses.index');
 Route::get('/transitions', [StatusController::class, 'getStatusTransitions'])->name('statuses.index');
 
