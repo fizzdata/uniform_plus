@@ -185,6 +185,18 @@ public function get_orders($page_info = null) {
         
         return $response['count'];
 }
+
+function get_order($shopify_order_id) {
+    $response = Http::withHeaders([
+        'X-Shopify-Access-Token' => $this->access_token,
+    ])->get("https://{$this->shop_domain}/admin/api/2024-10/orders/{$shopify_order_id}.json");
+
+    if ($response->failed()) {
+        throw new \Exception("Failed to fetch order with ID {$shopify_order_id}");
+    }
+
+    return $response['order'];
     
         
+}
 }

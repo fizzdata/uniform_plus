@@ -231,7 +231,7 @@
                 class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
               >
                 <button
-                  @click="openOrderWindow(order.link)"
+                  @click="openOrderModal(order)"
                   class="text-gray-600 hover:text-gray-900"
                 >
                   View
@@ -243,16 +243,22 @@
       </div>
     </div>
     <!-- //load more button -->
-
-    <div class="flex justify-center mt-6">
-      <button
-        v-if="nextPageInfo"
-        @click="fetchOrders(nextPageInfo, true)"
-        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
-        :disabled="loadingMore"
-      >
-        {{ loadingMore ? "Loading..." : "Load More Orders" }}
-      </button>
+    <!-- Order Details Modal -->
+    <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg relative p-6">
+        <button @click="closeOrderModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+        <h3 class="text-lg font-bold mb-4">Order Details</h3>
+        <div v-if="orderDetailsLoading" class="text-center py-4">Loading...</div>
+        <div v-else-if="orderDetails">
+          <div class="mb-2"><strong>Order ID:</strong> {{ orderDetails.id }}</div>
+          <div class="mb-2"><strong>Customer:</strong> {{ orderDetails.customer_name }}</div>
+          <div class="mb-2"><strong>Date:</strong> {{ formatDate(orderDetails.created_at) }}</div>
+          <div class="mb-2"><strong>Status:</strong> {{ getStatusDisplay(orderDetails.status_id)?.name }}</div>
+          <div class="mb-2"><strong>Amount:</strong> ${{ orderDetails.amount }}</div>
+          <!-- Add more fields from orderDetails as needed -->
+        </div>
+        <div v-else class="text-center py-4 text-red-500">No details found.</div>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -538,6 +544,34 @@ onMounted(async () => {
   await fetchStatuses();
   await fetchOrders();
 });
+
+const showOrderModal = ref(false);
+const selectedOrder = ref(null);
+const orderDetails = ref(null);
+const orderDetailsLoading = ref(false);
+
+const openOrderModal = async (order) => {
+  selectedOrder.value = order;
+  showOrderModal.value = true;
+  orderDetails.value = null;
+  orderDetailsLoading.value = true;
+  try {
+    // Replace with your actual API endpoint for order details
+    const response = await axios.get(`${apiUrl}/api/shopify/orders/${order.shopify_order_id	}?shop=${shop}`);
+    orderDetails.value = response.data;
+  } catch (error) {
+    toast.error("Failed to fetch order details");
+    orderDetails.value = null;
+  } finally {
+    orderDetailsLoading.value = false;
+  }
+};
+
+const closeOrderModal = () => {
+  showOrderModal.value = false;
+  selectedOrder.value = null;
+  orderDetails.value = null;
+};
 </script>
 
 <style scoped>

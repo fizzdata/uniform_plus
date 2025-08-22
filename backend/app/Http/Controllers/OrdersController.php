@@ -81,4 +81,19 @@ class OrdersController extends Controller
     return response()->json(['orders' => $formattedOrders, 'next_page_info' => $orders_info['next_page_info']], 200);
 
     }
+
+    public function show(Request $request){
+
+    $shop = new Shopify($request->shop['id']); // Use the shop ID from the request
+
+    // Fetch order details from Shopify
+    $order = $shop->get_order($request->shopify_order_id);
+    if (empty($order)) {
+        return response()->json(['message' => 'Order not found'], 404);
+    }
+        return response()->json(['order' => $order], 200);
+
+
+}
+
 }
