@@ -243,6 +243,16 @@
       </div>
     </div>
     <!-- //load more button -->
+    <div class="flex justify-center mt-6">
+      <button
+        v-if="nextPageInfo"
+        @click="fetchOrders(nextPageInfo, true)"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+        :disabled="loadingMore"
+      >
+        {{ loadingMore ? "Loading..." : "Load More Orders" }}
+      </button>
+    </div>
     <!-- Order Details Card Modal -->
     <div v-if="showOrderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-0 relative border border-gray-200">
